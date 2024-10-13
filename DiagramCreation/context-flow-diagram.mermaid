@@ -1,0 +1,11 @@
+graph TD
+    A[Task Creation Context] -->|Creates task| B[Task Management Context]
+    B -->|Stores task| C[Inbox Context]
+    B -->|Assigns task| D[Team Context]
+    D -->|Reviews task| B
+    D -->|Assigns task| E[Individual Context]
+    E -->|Works on task| B
+    E -->|Adds attachment| B
+    E -->|Adds notes| B
+    E -->|Finishes task| B
+    E -->|Creates follow-up| C
