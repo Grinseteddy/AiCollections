@@ -1,0 +1,230 @@
+openapi: 3.1.0
+info:
+  title: Task Management API
+  description: API for managing tasks, notes, attachments, and documents.
+  contact:
+    email: annegret.junker@codecentric.de
+    name: Annegret Junker
+    url: https://api.codecentric.de
+  version: 1.0.0
+  x-api-id: c004ebd2-f9c6-4e21-aa41-826f8eaf4092
+  x-audience: external-public
+
+servers:
+  - url: 'https://api.codecentric.de/service'
+
+security:
+  - openIdConnect:
+      - resource:read
+      - resource:write
+      - resource:admin
+
+tags:
+  - name: Task Management
+    description: Task-related operations
+
+paths:
+  /tasks:
+    get:
+      description: Retrieve all tasks
+      operationId: getTasks
+      tags:
+        - Task Management
+      security:
+        - openIdConnect:
+            - resource:read
+      responses:
+        '200':
+          description: A list of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    post:
+      description: Create a new task
+      operationId: createTask
+      tags:
+        - Task Management
+      security:
+        - openIdConnect:
+            - resource:write
+      requestBody:
+        $ref: '#/components/requestBodies/TaskToBeCreated'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+
+  /tasks/{taskId}:
+    get:
+      description: Get a specific task by its ID
+      operationId: getTask
+      tags:
+        - Task Management
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+
+    put:
+      description: Update an existing task
+      operationId: updateTask
+      tags:
+        - Task Management
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        $ref: '#/components/requestBodies/TaskToBeUpdated'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+
+  /tasks/{taskId}/notes:
+    post:
+      description: Add a note to a task
+      operationId: addNote
+      tags:
+        - Task Management
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        $ref: '#/components/requestBodies/NoteToBeCreated'
+      responses:
+        '201':
+          description: Note added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+        assignee:
+          $ref: '#/components/schemas/TeamMember'
+        status:
+          $ref: '#/components/schemas/Status'
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+
+    Note:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        author:
+          $ref: '#/components/schemas/TeamMember'
+        createdAt:
+          type: string
+          format: date-time
+
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        fileType:
+          type: string
+
+    TeamMember:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    Status:
+      type: string
+      enum:
+        - new
+        - in_progress
+        - done
+        - declined
+
+  requestBodies:
+    TaskToBeCreated:
+      description: Task object to be created
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Task'
+
+    TaskToBeUpdated:
+      description: Task object to be updated
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Task'
+
+    NoteToBeCreated:
+      description: Note object to be added to a task
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Note'
+
+  responses:
+    BadRequestResponse:
+      description: Bad request response
+    ForbiddenResponse:
+      description: Access forbidden
+    ServiceNotAvailableResponse:
+      description: Service is currently unavailable
+
+  
