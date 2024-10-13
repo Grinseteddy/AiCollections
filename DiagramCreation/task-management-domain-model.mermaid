@@ -1,0 +1,46 @@
+classDiagram
+    class Task {
+        +UUID id
+        +String description
+        +Enum status
+        +DateTime createdAt
+        +DateTime lastUpdate
+    }
+    class Note {
+        +UUID id
+        +String text
+        +DateTime createdAt
+    }
+    class Attachment {
+        +UUID id
+        +String filename
+    }
+    class Document {
+        +UUID id
+        +String name
+    }
+    class File {
+        +UUID id
+        +String name
+    }
+    class Inbox {
+        +UUID id
+        +String name
+    }
+    class TeamMember {
+        +UUID id
+        +String name
+    }
+    class Clerk {
+        +UUID id
+        +String name
+    }
+
+    Task "1" *-- "0..*" Note
+    Task "1" *-- "0..*" Attachment
+    Task "0..*" -- "1" TeamMember : assigned to
+    Task "0..*" -- "1" Clerk : created by
+    Attachment "1" -- "1" Document
+    Document "1" *-- "1..*" File
+    Inbox "1" *-- "0..*" Task
+    Note "0..*" -- "1" TeamMember : authored by
