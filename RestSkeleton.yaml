@@ -10,7 +10,7 @@ info:
   x-api-id: c004ebd2-f9c6-4e21-aa41-826f8eaf4092
   x-audience: external-public
 servers:
-  - url: 'https://api.aok.de/service'
+  - url: 'https://api.codecentric.de/service'
 security:
   - openIdConnect:
       - resource:read
