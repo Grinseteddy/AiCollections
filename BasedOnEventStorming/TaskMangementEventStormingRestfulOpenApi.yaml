@@ -1,0 +1,205 @@
+openapi: 3.1.0
+info:
+  title: Task and Document Management API
+  version: 1.0.0
+  description: API for managing tasks and documents, including task creation, assignment, and note management.
+
+servers:
+  - url: http://api.example.com/v1
+
+paths:
+  /tasks:
+    post:
+      summary: Create a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                assigneeId:
+                  type: integer
+      responses:
+        '201':
+          description: Task created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  taskId:
+                    type: integer
+
+    get:
+      summary: Retrieve a list of tasks
+      responses:
+        '200':
+          description: A list of tasks.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                    status:
+                      type: string
+
+  /tasks/{taskId}:
+    parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: integer
+
+    get:
+      summary: Retrieve details of a specific task
+      responses:
+        '200':
+          description: Task details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  status:
+                    type: string
+
+    put:
+      summary: Update a specific task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: string
+                assigneeId:
+                  type: integer
+      responses:
+        '200':
+          description: Task updated successfully.
+
+    delete:
+      summary: Delete a specific task
+      responses:
+        '204':
+          description: Task deleted successfully.
+
+  /tasks/{taskId}/assign:
+    post:
+      summary: Assign a task to a team member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assigneeId:
+                  type: integer
+      responses:
+        '200':
+          description: Task assigned successfully.
+
+  /tasks/{taskId}/progress:
+    patch:
+      summary: Update task status to in-progress
+      responses:
+        '200':
+          description: Task status updated to in-progress.
+
+  /tasks/{taskId}/done:
+    post:
+      summary: Mark a task as done
+      responses:
+        '200':
+          description: Task marked as done.
+
+  /tasks/{taskId}/notes:
+    post:
+      summary: Add a note to a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+      responses:
+        '201':
+          description: Note added successfully.
+
+  /documents:
+    post:
+      summary: Create a new document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '201':
+          description: Document created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documentId:
+                    type: integer
+
+  /documents/{documentId}:
+    parameters:
+      - name: documentId
+        in: path
+        required: true
+        schema:
+          type: integer
+
+    put:
+      summary: Update an existing document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '200':
+          description: Document updated successfully.
