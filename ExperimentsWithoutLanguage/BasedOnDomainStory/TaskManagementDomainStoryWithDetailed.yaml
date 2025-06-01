@@ -1,0 +1,232 @@
+openapi: 3.1.0
+info:
+  title: Task Management API
+  description: API for managing tasks within a team, including creation, assignment, and follow-up processes.
+  version: 1.0.0
+servers:
+  - url: https://api.taskmanagement.com/v1
+
+paths:
+  /tasks:
+    post:
+      summary: Create a new task
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                assigneeId:
+                  type: string
+                createdBy:
+                  type: string
+              required:
+                - title
+                - createdBy
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad request
+
+  /tasks/{taskId}:
+    parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get a specific task
+      operationId: getTask
+      responses:
+        '200':
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+
+    put:
+      summary: Update a task
+      operationId: updateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                assigneeId:
+                  type: string
+                status:
+                  type: string
+                notes:
+                  type: string
+              required:
+                - title
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+
+    delete:
+      summary: Delete a task
+      operationId: deleteTask
+      responses:
+        '204':
+          description: Task deleted successfully
+        '404':
+          description: Task not found
+
+  /tasks/{taskId}/attachments:
+    post:
+      summary: Add an attachment to a task
+      operationId: addAttachment
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                attachmentUrl:
+                  type: string
+              required:
+                - attachmentUrl
+      responses:
+        '201':
+          description: Attachment added successfully
+        '404':
+          description: Task not found
+
+  /tasks/{taskId}/notes:
+    post:
+      summary: Add notes to a task
+      operationId: addNotes
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+              required:
+                - note
+      responses:
+        '201':
+          description: Note added successfully
+        '404':
+          description: Task not found
+
+  /tasks/{taskId}/finish:
+    post:
+      summary: Finish a task
+      operationId: finishTask
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Task finished successfully
+        '404':
+          description: Task not found
+
+  /tasks/followUp:
+    post:
+      summary: Create a follow-up task
+      operationId: createFollowUp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                originalTaskId:
+                  type: string
+                createdBy:
+                  type: string
+              required:
+                - title
+                - originalTaskId
+                - createdBy
+      responses:
+        '201':
+          description: Follow-up task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        assigneeId:
+          type: string
+        status:
+          type: string
+        notes:
+          type: string
+        attachments:
+          type: array
+          items:
+            type: string
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

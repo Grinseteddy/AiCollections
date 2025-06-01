@@ -1,0 +1,643 @@
+openapi: 3.1.0
+info:
+  title: Catalog Management API
+  description: API for managing library catalog entries, abstracts, and related metadata
+  version: 1.0.0
+  contact:
+    name: Annegret Junker
+    email: contact@catalog-management.org
+  x-api-id: 7e2a8c1f-9b4d-4a32-8f51-934b7eaf2184
+  x-audience: external-public
+
+servers:
+  - url: 'http://api.online-library.org/catalog-management'
+    description: Production server
+
+security:
+  - openIdConnect:
+      - catalog:read
+      - catalog:write
+      - catalog:admin
+
+tags:
+  - name: Catalog Entries
+    description: Operations for managing catalog entries
+  - name: Abstracts
+    description: Operations for managing abstracts
+
+paths:
+  /catalog-entries:
+    get:
+      operationId: getCatalogEntries
+      tags:
+        - Catalog Entries
+      summary: Get catalog entries
+      description: Retrieve a list of catalog entries with optional filtering
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/SearchParameter'
+        - $ref: '#/components/parameters/AuthorParameter'
+        - $ref: '#/components/parameters/IsbnParameter'
+        - $ref: '#/components/parameters/LimitParameter'
+        - $ref: '#/components/parameters/OffsetParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntriesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    post:
+      operationId: createCatalogEntry
+      tags:
+        - Catalog Entries
+      summary: Create a new catalog entry
+      description: Create a new catalog entry in the system
+      security:
+        - openIdConnect:
+            - catalog:write
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/CatalogEntryCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-entries/{catalog-entry-id}:
+    get:
+      operationId: getCatalogEntryById
+      tags:
+        - Catalog Entries
+      summary: Get catalog entry by ID
+      description: Retrieve a specific catalog entry by its identifier
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    put:
+      operationId: updateCatalogEntry
+      tags:
+        - Catalog Entries
+      summary: Update a catalog entry
+      description: Update an existing catalog entry
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    delete:
+      operationId: deleteCatalogEntry
+      tags:
+        - Catalog Entries
+      summary: Delete a catalog entry
+      description: Remove a catalog entry from the system
+      security:
+        - openIdConnect:
+            - catalog:admin
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+      responses:
+        '204':
+          description: Catalog entry deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-management/{catalog-entry-id}/abstracts:
+    get:
+      operationId: getAbstractsByCatalogEntry
+      tags:
+        - Abstracts
+      summary: Get abstracts for a catalog entry
+      description: Retrieve all abstracts associated with a specific catalog entry
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AbstractsResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    post:
+      operationId: createAbstractForCatalogEntry
+      tags:
+        - Abstracts
+      summary: Create an abstract for a catalog entry
+      description: Add a new abstract to a specific catalog entry
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/AbstractCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/AbstractCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-management/abstracts:
+    get:
+      operationId: getAllAbstracts
+      tags:
+        - Abstracts
+      summary: Get all abstracts
+      description: Retrieve a list of all abstracts in the system
+      parameters:
+        - $ref: '#/components/parameters/LimitParameter'
+        - $ref: '#/components/parameters/OffsetParameter'
+        - $ref: '#/components/parameters/SearchParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AbstractsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-management/abstracts/{abstract-id}:
+    get:
+      operationId: getAbstractById
+      tags:
+        - Abstracts
+      summary: Get abstract by ID
+      description: Retrieve a specific abstract by its identifier
+      parameters:
+        - $ref: '#/components/parameters/AbstractIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AbstractResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    put:
+      operationId: updateAbstract
+      tags:
+        - Abstracts
+      summary: Update an abstract
+      description: Update an existing abstract
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/AbstractIdParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/AbstractUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/AbstractResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    delete:
+      operationId: deleteAbstract
+      tags:
+        - Abstracts
+      summary: Delete an abstract
+      description: Remove an abstract from the system
+      security:
+        - openIdConnect:
+            - catalog:admin
+      parameters:
+        - $ref: '#/components/parameters/AbstractIdParameter'
+      responses:
+        '204':
+          description: Abstract deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+components:
+  parameters:
+    CatalogEntryIdParameter:
+      name: catalog-entry-id
+      in: path
+      required: true
+      description: Unique identifier for a catalog entry
+      schema:
+        type: string
+        format: uuid
+
+    AbstractIdParameter:
+      name: abstract-id
+      in: path
+      required: true
+      description: Unique identifier for an abstract
+      schema:
+        type: string
+        format: uuid
+
+    SearchParameter:
+      name: search
+      in: query
+      description: Search term for filtering results
+      schema:
+        type: string
+        maxLength: 100
+
+    AuthorParameter:
+      name: author
+      in: query
+      description: Filter by author name
+      schema:
+        type: string
+        maxLength: 200
+
+    IsbnParameter:
+      name: isbn
+      in: query
+      description: Filter by ISBN (ISBN-10 or ISBN-13)
+      schema:
+        type: string
+        pattern: '^(?:(?:\d{9}[\dX])|(?:\d{13}))$'
+
+    LimitParameter:
+      name: limit
+      in: query
+      description: Maximum number of results to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    OffsetParameter:
+      name: offset
+      in: query
+      description: Number of results to skip for pagination
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+  schemas:
+    CatalogEntry:
+      type: object
+      required:
+        - catalogIdentifier
+        - title
+        - authors
+        - isbn
+      properties:
+        catalogIdentifier:
+          type: string
+          format: uuid
+          description: Unique identifier for the catalog entry
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Title of the publication
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'
+          minItems: 1
+          description: List of authors associated with this entry
+        isbn:
+          $ref: '#/components/schemas/ISBN'
+        abstract:
+          $ref: '#/components/schemas/Abstract'
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the entry was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the entry was last updated
+
+    Author:
+      type: object
+      required:
+        - authorIdentifier
+        - name
+      properties:
+        authorIdentifier:
+          type: string
+          format: uuid
+          description: Unique identifier for the author
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Full name of the author
+        givenName:
+          type: string
+          maxLength: 100
+          description: Given name(s) of the author
+
+    ISBN:
+      type: object
+      required:
+        - value
+        - type
+      properties:
+        value:
+          type: string
+          description: The ISBN value
+        type:
+          type: string
+          enum:
+            - ISBN-10
+            - ISBN-13
+          description: Type of ISBN
+      oneOf:
+        - properties:
+            type:
+              const: ISBN-10
+            value:
+              type: string
+              pattern: '^\d{9}[\dX]$'
+        - properties:
+            type:
+              const: ISBN-13
+            value:
+              type: string
+              pattern: '^\d{13}$'
+
+    Abstract:
+      type: object
+      required:
+        - abstractId
+        - content
+      properties:
+        abstractId:
+          type: string
+          format: uuid
+          description: Unique identifier for the abstract
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: The abstract content
+        language:
+          type: string
+          pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+          description: Language code (ISO 639-1 with optional country code)
+          default: en
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the abstract was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the abstract was last updated
+
+    CatalogEntryCreate:
+      type: object
+      required:
+        - title
+        - authors
+        - isbn
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Title of the publication
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorCreate'
+          minItems: 1
+          description: List of authors for this entry
+        isbn:
+          $ref: '#/components/schemas/ISBN'
+        abstract:
+          $ref: '#/components/schemas/AbstractCreate'
+
+    AuthorCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Full name of the author
+        givenName:
+          type: string
+          maxLength: 100
+          description: Given name(s) of the author
+
+    AbstractCreate:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: The abstract content
+        language:
+          type: string
+          pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+          description: Language code (ISO 639-1 with optional country code)
+          default: en
+
+    CatalogEntryUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Title of the publication
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorCreate'
+          minItems: 1
+          description: List of authors for this entry
+        isbn:
+          $ref: '#/components/schemas/ISBN'
+
+    AbstractUpdate:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: The abstract content
+        language:
+          type: string
+          pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+          description: Language code (ISO 639-1 with optional country code)
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+
+  responses:
+    CatalogEntryResponse:
+      description: Single catalog entry response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntriesResponse:
+      description: List of catalog entries
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryCreatedResponse:
+      description: Catalog entry created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    AbstractResponse:
+      description: Single abstract response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Abstract'
+
+    AbstractsResponse:
+      description: List of abstracts
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Abstract'
+
+    AbstractCreatedResponse:
+      description: Abstract created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Abstract'
+
+    BadRequestResponse:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFoundResponse:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: Access forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServiceNotAvailableResponse:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  requestBodies:
+    CatalogEntryCreateRequest:
+      description: Catalog entry creation request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryCreate'
+
+    CatalogEntryUpdateRequest:
+      description: Catalog entry update request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryUpdate'
+
+    AbstractCreateRequest:
+      description: Abstract creation request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AbstractCreate'
+
+    AbstractUpdateRequest:
+      description: Abstract update request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AbstractUpdate'
+
+  securitySchemes:
+    openIdConnect:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.catalog-management.org/.well-known/openid-configuration
+  

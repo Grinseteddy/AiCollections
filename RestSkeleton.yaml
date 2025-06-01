@@ -371,7 +371,7 @@ components:
     # needs to be substituted by the resource you want to expose
     # To be created - usually the resource without identifier
     ResourceToBeCreated:
-      description: Description of the resource
+      description: Description of the resource (Resourcce)
       type: object
       required:
       # put here the properties which are mandatory for your resource
