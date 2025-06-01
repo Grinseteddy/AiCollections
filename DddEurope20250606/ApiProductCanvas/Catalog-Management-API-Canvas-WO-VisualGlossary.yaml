@@ -1,0 +1,560 @@
+openapi: 3.1.0
+info:
+  title: Catalog Management API
+  description: API for managing catalog entries and abstracts in an online library system
+  version: 0.1.0
+  contact:
+    name: Annegret Junker
+  x-api-id: catalog-management-api
+  x-audience: external-public
+
+servers:
+  - url: 'http://api.online-library.org/catalog-management'
+    description: Production server
+
+security:
+  - apiKey: []
+
+tags:
+  - name: Catalog Entries
+    description: Management of catalog entries
+  - name: Abstracts
+    description: Management of abstracts for catalog entries
+
+paths:
+  /catalog-entries:
+    get:
+      operationId: getCatalogEntries
+      tags:
+        - Catalog Entries
+      summary: Retrieve all catalog entries
+      description: Returns a list of all catalog entries in the system
+      parameters:
+        - $ref: '#/components/parameters/SearchParameter'
+      responses:
+        '200':
+          description: Array of catalog entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+    post:
+      operationId: createCatalogEntry
+      tags:
+        - Catalog Entries
+      summary: Create a new catalog entry
+      description: Creates a new catalog entry in the system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogEntryCreate'
+      responses:
+        '201':
+          description: Catalog entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /catalog-entries/{catalog-entry-id}:
+    parameters:
+      - $ref: '#/components/parameters/CatalogEntryIdParameter'
+
+    put:
+      operationId: updateCatalogEntry
+      tags:
+        - Catalog Entries
+      summary: Update a catalog entry
+      description: Updates an existing catalog entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogEntryUpdate'
+      responses:
+        '200':
+          description: Catalog entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+    delete:
+      operationId: deleteCatalogEntry
+      tags:
+        - Catalog Entries
+      summary: Delete a catalog entry
+      description: Deletes a catalog entry from the system
+      responses:
+        '204':
+          description: Catalog entry deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /catalog-management/{catalog-entry-id}/abstracts:
+    parameters:
+      - $ref: '#/components/parameters/CatalogEntryIdParameter'
+
+    get:
+      operationId: getAbstractsByCatalogEntry
+      tags:
+        - Abstracts
+      summary: Get abstracts for a catalog entry
+      description: Returns all abstracts associated with a specific catalog entry
+      responses:
+        '200':
+          description: List of abstracts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Abstract'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+    post:
+      operationId: createAbstractForCatalogEntry
+      tags:
+        - Abstracts
+      summary: Create abstract for catalog entry
+      description: Creates a new abstract for a specific catalog entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbstractCreate'
+      responses:
+        '201':
+          description: Abstract created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Abstract'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /catalog-management/abstracts:
+    get:
+      operationId: getAllAbstracts
+      tags:
+        - Abstracts
+      summary: Get all abstracts
+      description: Returns all abstracts in the system
+      parameters:
+        - $ref: '#/components/parameters/SearchParameter'
+      responses:
+        '200':
+          description: Array of abstracts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Abstract'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /catalog-management/abstracts/{abstract-id}:
+    parameters:
+      - $ref: '#/components/parameters/AbstractIdParameter'
+
+    put:
+      operationId: updateAbstract
+      tags:
+        - Abstracts
+      summary: Update an abstract
+      description: Updates an existing abstract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbstractUpdate'
+      responses:
+        '200':
+          description: Abstract updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Abstract'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+    delete:
+      operationId: deleteAbstract
+      tags:
+        - Abstracts
+      summary: Delete an abstract
+      description: Deletes an abstract from the system
+      responses:
+        '204':
+          description: Abstract deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+components:
+  parameters:
+    CatalogEntryIdParameter:
+      name: catalog-entry-id
+      in: path
+      required: true
+      description: Unique identifier of the catalog entry
+      schema:
+        type: string
+        format: uuid
+
+    AbstractIdParameter:
+      name: abstract-id
+      in: path
+      required: true
+      description: Unique identifier of the abstract
+      schema:
+        type: string
+        format: uuid
+
+    SearchParameter:
+      name: search
+      in: query
+      required: false
+      description: Search term to filter results
+      schema:
+        type: string
+
+  schemas:
+    CatalogEntry:
+      type: object
+      required:
+        - id
+        - title
+        - catalogType
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the catalog entry
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Title of the catalog entry
+        description:
+          type: string
+          maxLength: 2000
+          description: Detailed description of the catalog entry
+        catalogType:
+          type: string
+          enum:
+            - BOOK
+            - JOURNAL
+            - ARTICLE
+            - THESIS
+            - REPORT
+          description: Type of catalog entry
+        author:
+          type: string
+          maxLength: 200
+          description: Author of the catalog entry
+        isbn:
+          type: string
+          pattern: '^(\d{10}|\d{13})$'
+          description: ISBN number for books
+        publishedDate:
+          type: string
+          format: date
+          description: Date of publication
+        language:
+          type: string
+          pattern: '^[a-z]{2}$'
+          description: ISO 639-1 language code
+        abstractCount:
+          type: integer
+          minimum: 0
+          description: Number of abstracts associated with this entry
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp of creation
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of last update
+
+    CatalogEntryCreate:
+      type: object
+      required:
+        - title
+        - catalogType
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Title of the catalog entry
+        description:
+          type: string
+          maxLength: 2000
+          description: Detailed description of the catalog entry
+        catalogType:
+          type: string
+          enum:
+            - BOOK
+            - JOURNAL
+            - ARTICLE
+            - THESIS
+            - REPORT
+          description: Type of catalog entry
+        author:
+          type: string
+          maxLength: 200
+          description: Author of the catalog entry
+        isbn:
+          type: string
+          pattern: '^(\d{10}|\d{13})$'
+          description: ISBN number for books
+        publishedDate:
+          type: string
+          format: date
+          description: Date of publication
+        language:
+          type: string
+          pattern: '^[a-z]{2}$'
+          description: ISO 639-1 language code
+
+    CatalogEntryUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Title of the catalog entry
+        description:
+          type: string
+          maxLength: 2000
+          description: Detailed description of the catalog entry
+        author:
+          type: string
+          maxLength: 200
+          description: Author of the catalog entry
+        isbn:
+          type: string
+          pattern: '^(\d{10}|\d{13})$'
+          description: ISBN number for books
+        publishedDate:
+          type: string
+          format: date
+          description: Date of publication
+        language:
+          type: string
+          pattern: '^[a-z]{2}$'
+          description: ISO 639-1 language code
+
+    Abstract:
+      type: object
+      required:
+        - id
+        - catalogEntryId
+        - content
+        - language
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the abstract
+        catalogEntryId:
+          type: string
+          format: uuid
+          description: ID of the associated catalog entry
+        content:
+          type: string
+          minLength: 50
+          maxLength: 5000
+          description: Content of the abstract
+        language:
+          type: string
+          pattern: '^[a-z]{2}$'
+          description: ISO 639-1 language code
+        keywords:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+          description: Keywords associated with the abstract
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp of creation
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of last update
+
+    AbstractCreate:
+      type: object
+      required:
+        - content
+        - language
+      properties:
+        content:
+          type: string
+          minLength: 50
+          maxLength: 5000
+          description: Content of the abstract
+        language:
+          type: string
+          pattern: '^[a-z]{2}$'
+          description: ISO 639-1 language code
+        keywords:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+          description: Keywords associated with the abstract
+
+    AbstractUpdate:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 50
+          maxLength: 5000
+          description: Content of the abstract
+        language:
+          type: string
+          pattern: '^[a-z]{2}$'
+          description: ISO 639-1 language code
+        keywords:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+          description: Keywords associated with the abstract
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the error
+
+  responses:
+    BadRequestResponse:
+      description: Bad request - Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 'BAD_REQUEST'
+            message: 'Invalid input provided'
+            timestamp: '2025-06-01T12:00:00Z'
+
+    ForbiddenResponse:
+      description: Forbidden - Access denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 'FORBIDDEN'
+            message: 'Access denied to this resource'
+            timestamp: '2025-06-01T12:00:00Z'
+
+    NotFoundResponse:
+      description: Not found - Resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 'NOT_FOUND'
+            message: 'Resource not found'
+            timestamp: '2025-06-01T12:00:00Z'
+
+    InternalServerErrorResponse:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 'INTERNAL_ERROR'
+            message: 'An internal server error occurred'
+            timestamp: '2025-06-01T12:00:00Z'
+
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+  
