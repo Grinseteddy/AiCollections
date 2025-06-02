@@ -1,0 +1,721 @@
+openapi: 3.1.0
+info:
+  title: Catalog Management API
+  description: API for managing library catalog entries and books
+  version: 1.0.0
+  x-api-id: 2a5c8f1e-9d4b-4f32-bb67-934e7fab2108
+  x-audience: external-public
+
+servers:
+  - url: 'https://api.catalogmanagement.com/v1'
+
+security:
+  - openIdConnect:
+      - catalog:read
+      - catalog:write
+      - catalog:admin
+
+tags:
+  - name: Catalog Entries
+    description: Catalog entry management operations
+  - name: Books
+    description: Book management operations
+  - name: Catalogs
+    description: Catalog management operations
+
+paths:
+  /catalog-entries:
+    get:
+      operationId: getCatalogEntriesByFilter
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/StatusParameter'
+        - $ref: '#/components/parameters/BookIdParameter'
+        - $ref: '#/components/parameters/CatalogIdParameter'
+        - $ref: '#/components/parameters/LibrarianIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    post:
+      operationId: createCatalogEntry
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:write
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/CatalogEntryCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-entries/{entryId}:
+    get:
+      operationId: getCatalogEntryById
+      tags:
+        - Catalog Entries
+      parameters:
+        - $ref: '#/components/parameters/EntryIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    put:
+      operationId: updateCatalogEntry
+      tags:
+        - Catalog Entries
+      parameters:
+        - $ref: '#/components/parameters/EntryIdParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    delete:
+      operationId: deleteCatalogEntry
+      tags:
+        - Catalog Entries
+      parameters:
+        - $ref: '#/components/parameters/EntryIdParameter'
+      responses:
+        '204':
+          description: Catalog entry deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /books:
+    get:
+      operationId: getBooksByFilter
+      tags:
+        - Books
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - name: title
+          in: query
+          schema:
+            type: string
+        - name: author
+          in: query
+          schema:
+            type: string
+        - name: isbn
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/BookListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+
+    post:
+      operationId: createBook
+      tags:
+        - Books
+      security:
+        - openIdConnect:
+            - catalog:write
+      requestBody:
+        $ref: '#/components/requestBodies/BookCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/BookCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+
+  /books/{bookId}:
+    get:
+      operationId: getBookById
+      tags:
+        - Books
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          $ref: '#/components/responses/BookResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    put:
+      operationId: updateBook
+      tags:
+        - Books
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        $ref: '#/components/requestBodies/BookUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BookResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /catalogs:
+    get:
+      operationId: getCatalogsByFilter
+      tags:
+        - Catalogs
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+
+    post:
+      operationId: createCatalog
+      tags:
+        - Catalogs
+      security:
+        - openIdConnect:
+            - catalog:write
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/CatalogCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+
+  /catalogs/{catalogId}:
+    get:
+      operationId: getCatalogById
+      tags:
+        - Catalogs
+      parameters:
+        - name: catalogId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    put:
+      operationId: updateCatalog
+      tags:
+        - Catalogs
+      parameters:
+        - name: catalogId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+components:
+  parameters:
+    EntryIdParameter:
+      name: entryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    StatusParameter:
+      name: status
+      in: query
+      schema:
+        $ref: '#/components/schemas/CatalogEntryStatus'
+
+    BookIdParameter:
+      name: bookId
+      in: query
+      schema:
+        type: string
+        format: uuid
+
+    CatalogIdParameter:
+      name: catalogId
+      in: query
+      schema:
+        type: string
+        format: uuid
+
+    LibrarianIdParameter:
+      name: librarianId
+      in: query
+      schema:
+        type: string
+        format: uuid
+
+    VersionParameter:
+      name: x-version
+      in: header
+      required: true
+      schema:
+        type: string
+        default: "1.0.0"
+        enum: ["1.0.0"]
+
+  schemas:
+    CatalogEntry:
+      type: object
+      required:
+        - id
+        - bookId
+        - catalogId
+        - status
+        - createdBy
+      properties:
+        id:
+          type: string
+          format: uuid
+        bookId:
+          type: string
+          format: uuid
+        catalogId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/CatalogEntryStatus'
+        location:
+          type: string
+          maxLength: 100
+        notes:
+          type: string
+          maxLength: 500
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CatalogEntryStatus:
+      type: string
+      enum:
+        - AVAILABLE
+        - CHECKED_OUT
+        - RESERVED
+        - MAINTENANCE
+        - RETIRED
+
+    CatalogEntryCreate:
+      type: object
+      required:
+        - bookId
+        - catalogId
+      properties:
+        bookId:
+          type: string
+          format: uuid
+        catalogId:
+          type: string
+          format: uuid
+        location:
+          type: string
+          maxLength: 100
+        notes:
+          type: string
+          maxLength: 500
+
+    CatalogEntryUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/CatalogEntryStatus'
+        location:
+          type: string
+          maxLength: 100
+        notes:
+          type: string
+          maxLength: 500
+
+    Book:
+      type: object
+      required:
+        - id
+        - title
+        - isbn
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        author:
+          type: string
+          maxLength: 200
+        isbn:
+          type: string
+          pattern: '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$'
+        publisher:
+          type: string
+          maxLength: 200
+        publishedYear:
+          type: integer
+          minimum: 1000
+          maximum: 9999
+        genre:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 2000
+        pageCount:
+          type: integer
+          minimum: 1
+        language:
+          type: string
+          maxLength: 50
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    BookCreate:
+      type: object
+      required:
+        - title
+        - isbn
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        author:
+          type: string
+          maxLength: 200
+        isbn:
+          type: string
+          pattern: '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$'
+        publisher:
+          type: string
+          maxLength: 200
+        publishedYear:
+          type: integer
+          minimum: 1000
+          maximum: 9999
+        genre:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 2000
+        pageCount:
+          type: integer
+          minimum: 1
+        language:
+          type: string
+          maxLength: 50
+
+    BookUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        author:
+          type: string
+          maxLength: 200
+        publisher:
+          type: string
+          maxLength: 200
+        publishedYear:
+          type: integer
+          minimum: 1000
+          maximum: 9999
+        genre:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 2000
+        pageCount:
+          type: integer
+          minimum: 1
+        language:
+          type: string
+          maxLength: 50
+
+    Catalog:
+      type: object
+      required:
+        - id
+        - name
+        - type
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        type:
+          $ref: '#/components/schemas/CatalogType'
+        isActive:
+          type: boolean
+          default: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CatalogType:
+      type: string
+      enum:
+        - GENERAL
+        - REFERENCE
+        - SPECIAL_COLLECTION
+        - DIGITAL
+        - PERIODICAL
+
+    CatalogCreate:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        type:
+          $ref: '#/components/schemas/CatalogType'
+
+    CatalogUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        isActive:
+          type: boolean
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    CatalogEntryResponse:
+      description: Single catalog entry response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryListResponse:
+      description: List of catalog entries
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryCreatedResponse:
+      description: Catalog entry created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    BookResponse:
+      description: Single book response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Book'
+
+    BookListResponse:
+      description: List of books
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Book'
+
+    BookCreatedResponse:
+      description: Book created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Book'
+
+    CatalogResponse:
+      description: Single catalog response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Catalog'
+
+    CatalogListResponse:
+      description: List of catalogs
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Catalog'
+
+    CatalogCreatedResponse:
+      description: Catalog created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Catalog'
+
+    BadRequestResponse:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFoundResponse:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: Access forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServiceNotAvailableResponse:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  requestBodies:
+    CatalogEntryCreateRequest:
+      description: Catalog entry creation request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryCreate'
+
+    CatalogEntryUpdateRequest:
+      description: Catalog entry update request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryUpdate'
+
+    BookCreateRequest:
+      description: Book creation request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookCreate'
+
+    BookUpdateRequest:
+      description: Book update request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookUpdate'
+
+    CatalogCreateRequest:
+      description: Catalog creation request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogCreate'
+
+    CatalogUpdateRequest:
+      description: Catalog update request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogUpdate'
+
+  securitySchemes:
+    openIdConnect:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.catalogmanagement.com/.well-known/openid-configuration
+  
