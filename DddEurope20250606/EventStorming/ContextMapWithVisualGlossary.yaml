@@ -1,0 +1,495 @@
+openapi: 3.1.0
+info:
+  title: Catalog Management API
+  description: API for managing catalog entries, authors, and bibliographic information
+  version: 1.0.0
+  x-api-id: 2a7b8c1d-9e4f-6g2h-bb52-937h9fag5183
+  x-audience: external-public
+
+servers:
+  - url: 'https://api.catalogmanagement.com/v1'
+
+security:
+  - openIdConnect:
+      - catalog:read
+      - catalog:write
+      - catalog:admin
+
+tags:
+  - name: Catalog Entries
+    description: Catalog entry management operations
+  - name: Authors
+    description: Author management operations
+  - name: Abstracts
+    description: Abstract management operations
+
+paths:
+  /catalog-entries:
+    get:
+      operationId: getCatalogEntriesByFilter
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/AuthorParameter'
+        - $ref: '#/components/parameters/ISBNParameter'
+        - $ref: '#/components/parameters/TitleParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    post:
+      operationId: createCatalogEntry
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:write
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/CatalogEntryCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-entries/{catalogId}:
+    get:
+      operationId: getCatalogEntryById
+      tags:
+        - Catalog Entries
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    put:
+      operationId: updateCatalogEntry
+      tags:
+        - Catalog Entries
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    delete:
+      operationId: deleteCatalogEntry
+      tags:
+        - Catalog Entries
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+      responses:
+        '204':
+          description: Catalog entry deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /catalog-entries/{catalogId}/abstract:
+    get:
+      operationId: getCatalogEntryAbstract
+      tags:
+        - Abstracts
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AbstractResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    post:
+      operationId: createCatalogEntryAbstract
+      tags:
+        - Abstracts
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/AbstractCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/AbstractResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+
+  /authors:
+    get:
+      operationId: getAuthorsByFilter
+      tags:
+        - Authors
+      parameters:
+        - $ref: '#/components/parameters/AuthorNameParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthorListResponse'
+
+    post:
+      operationId: createAuthor
+      tags:
+        - Authors
+      requestBody:
+        $ref: '#/components/requestBodies/AuthorCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/AuthorCreatedResponse'
+
+  /authors/{authorId}:
+    get:
+      operationId: getAuthorById
+      tags:
+        - Authors
+      parameters:
+        - $ref: '#/components/parameters/AuthorIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+components:
+  parameters:
+    CatalogIdParameter:
+      name: catalogId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    AuthorIdParameter:
+      name: authorId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    AuthorParameter:
+      name: authorId
+      in: query
+      schema:
+        type: string
+        format: uuid
+
+    AuthorNameParameter:
+      name: name
+      in: query
+      schema:
+        type: string
+
+    ISBNParameter:
+      name: isbn
+      in: query
+      schema:
+        type: string
+        pattern: '^(978|979)[0-9]{10}$|^[0-9]{9}[0-9X]$'
+
+    TitleParameter:
+      name: title
+      in: query
+      schema:
+        type: string
+
+    VersionParameter:
+      name: x-version
+      in: header
+      required: true
+      schema:
+        type: string
+        default: "1.0.0"
+        enum: ["1.0.0"]
+
+  schemas:
+    CatalogEntry:
+      type: object
+      required:
+        - catalogIdentifier
+        - isbn
+        - title
+        - authors
+      properties:
+        catalogIdentifier:
+          type: string
+          format: uuid
+        isbn:
+          $ref: '#/components/schemas/ISBN'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'
+          minItems: 1
+        abstract:
+          $ref: '#/components/schemas/Abstract'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CatalogEntryCreate:
+      type: object
+      required:
+        - isbn
+        - title
+        - authors
+      properties:
+        isbn:
+          $ref: '#/components/schemas/ISBN'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorCreate'
+          minItems: 1
+        abstract:
+          $ref: '#/components/schemas/AbstractCreate'
+
+    CatalogEntryUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorCreate'
+          minItems: 1
+
+    ISBN:
+      type: object
+      required:
+        - value
+        - type
+      properties:
+        value:
+          type: string
+          pattern: '^(978|979)[0-9]{10}$|^[0-9]{9}[0-9X]$'
+        type:
+          type: string
+          enum:
+            - ISBN-10
+            - ISBN-13
+
+    Author:
+      type: object
+      required:
+        - authorIdentifier
+        - name
+        - givenName
+      properties:
+        authorIdentifier:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        givenName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuthorCreate:
+      type: object
+      required:
+        - name
+        - givenName
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        givenName:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    Abstract:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          maxLength: 5000
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AbstractCreate:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          maxLength: 5000
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    CatalogEntryResponse:
+      description: Single catalog entry response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryListResponse:
+      description: List of catalog entries
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryCreatedResponse:
+      description: Catalog entry created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    AuthorResponse:
+      description: Single author response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Author'
+
+    AuthorListResponse:
+      description: List of authors
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Author'
+
+    AuthorCreatedResponse:
+      description: Author created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Author'
+
+    AbstractResponse:
+      description: Abstract response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Abstract'
+
+    BadRequestResponse:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFoundResponse:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: Access forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServiceNotAvailableResponse:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  requestBodies:
+    CatalogEntryCreateRequest:
+      description: Catalog entry creation request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryCreate'
+
+    CatalogEntryUpdateRequest:
+      description: Catalog entry update request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryUpdate'
+
+    AuthorCreateRequest:
+      description: Author creation request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthorCreate'
+
+    AbstractCreateRequest:
+      description: Abstract creation request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AbstractCreate'
+
+  securitySchemes:
+    openIdConnect:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.catalogmanagement.com/.well-known/openid-configuration
