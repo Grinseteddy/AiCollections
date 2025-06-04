@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Random Selector</title>
+</head>
+<body>
+<h2>Random Selector</h2>
+<textarea id="input" rows="6" cols="40" placeholder="Enter items, one per line"></textarea><br>
+<input type="number" id="count" value="2" min="1"><br>
+<button onclick="selectRandom()">Select</button>
+<p><strong>Selected:</strong></p>
+<ul id="output"></ul>
+
+<script>
+    function selectRandom() {
+        const input = document.getElementById('input').value.trim().split('\n').filter(Boolean);
+        const count = parseInt(document.getElementById('count').value);
+        const output = document.getElementById('output');
+
+        if (count > input.length) {
+            alert("Not enough items to select from.");
+            return;
+        }
+
+        const shuffled = input.sort(() => 0.5 - Math.random());
+        const selected = shuffled.slice(0, count);
+
+        output.innerHTML = selected.map(item => `<li>${item}</li>`).join('');
+    }
+</script>
+</body>
+</html>
