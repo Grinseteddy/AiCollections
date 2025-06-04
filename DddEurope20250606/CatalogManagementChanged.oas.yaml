@@ -4,7 +4,7 @@ info:
   description: |
     Catalog Management to be used by librarians
     Librarians can create new entries.
-    They can created tags and substracts for a certain entry.
+    They can created tags and abstracts for a certain entry.
   contact:
     email: annegret.junker@online-library.org
     name: Annegret Junker

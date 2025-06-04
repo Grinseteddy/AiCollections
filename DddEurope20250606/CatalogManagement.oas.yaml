@@ -4,7 +4,7 @@ info:
   description: |
     Catalog Management to be used by librarians
     Librarians can create new entries.
-    They can created tags and substracts for a certain entry.
+    They can created tags and an abstract for a certain entry.
   contact:
     email: annegret.junker@online-library.org
     name: Annegret Junker
@@ -130,7 +130,7 @@ paths:
         default:
           $ref: '#/components/responses/DefaultResponse'
 
-  /catalog-entries/{catalogEntryId}/abstract:
+  /catalog-entries/{catalogEntryId}/abstracts:
     put:
       description: Adds or changes an abstract of a catalog entry
       operationId: updateAbstractOnCatalogEntryById
