@@ -1,0 +1,561 @@
+openapi: 3.1.0
+info:
+  title: Catalog Management API
+  description: API for managing catalog entries and abstracts within the catalog domain
+  version: 1.0.0
+  x-api-id: 2e8a5f1c-9d4b-4a73-bb52-937e7fbc3184
+  x-audience: external-public
+  x-bounded-context: catalog-management
+  x-context-relationships: |
+    This bounded context operates independently but may integrate with other domains
+    through published events (catalog entry created/updated) and shared abstracts.
+
+servers:
+  - url: 'https://api.catalogmanagement.com/v1'
+
+security:
+  - openIdConnect:
+      - catalog:read
+      - catalog:write
+      - catalog:admin
+
+tags:
+  - name: Catalog Entries
+    description: Catalog entry management operations
+  - name: Abstracts
+    description: Abstract management operations
+  - name: Categories
+    description: Category management operations
+
+paths:
+  /catalog-entries:
+    get:
+      operationId: getCatalogEntriesByFilter
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/CategoryParameter'
+        - $ref: '#/components/parameters/StatusParameter'
+        - $ref: '#/components/parameters/TagsParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    post:
+      operationId: createCatalogEntry
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:write
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/CatalogEntryCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-entries/{entryId}:
+    get:
+      operationId: getCatalogEntryById
+      tags:
+        - Catalog Entries
+      parameters:
+        - $ref: '#/components/parameters/EntryIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    put:
+      operationId: updateCatalogEntry
+      tags:
+        - Catalog Entries
+      parameters:
+        - $ref: '#/components/parameters/EntryIdParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    delete:
+      operationId: deleteCatalogEntry
+      tags:
+        - Catalog Entries
+      parameters:
+        - $ref: '#/components/parameters/EntryIdParameter'
+      responses:
+        '204':
+          description: Catalog entry deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /catalog-entries/{entryId}/abstracts:
+    get:
+      operationId: getAbstractsByEntryId
+      tags:
+        - Abstracts
+      parameters:
+        - $ref: '#/components/parameters/EntryIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AbstractListResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    post:
+      operationId: createAbstract
+      tags:
+        - Abstracts
+      parameters:
+        - $ref: '#/components/parameters/EntryIdParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/AbstractCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/AbstractCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /abstracts/{abstractId}:
+    get:
+      operationId: getAbstractById
+      tags:
+        - Abstracts
+      parameters:
+        - $ref: '#/components/parameters/AbstractIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AbstractResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    put:
+      operationId: updateAbstract
+      tags:
+        - Abstracts
+      parameters:
+        - $ref: '#/components/parameters/AbstractIdParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/AbstractUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/AbstractResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    delete:
+      operationId: deleteAbstract
+      tags:
+        - Abstracts
+      parameters:
+        - $ref: '#/components/parameters/AbstractIdParameter'
+      responses:
+        '204':
+          description: Abstract deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /categories:
+    get:
+      operationId: getCategories
+      tags:
+        - Categories
+      security:
+        - openIdConnect:
+            - catalog:read
+      responses:
+        '200':
+          $ref: '#/components/responses/CategoryListResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+
+components:
+  parameters:
+    EntryIdParameter:
+      name: entryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    AbstractIdParameter:
+      name: abstractId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    CategoryParameter:
+      name: category
+      in: query
+      schema:
+        type: string
+        maxLength: 100
+
+    StatusParameter:
+      name: status
+      in: query
+      schema:
+        $ref: '#/components/schemas/CatalogEntryStatus'
+
+    TagsParameter:
+      name: tags
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+        maxItems: 10
+
+    VersionParameter:
+      name: x-version
+      in: header
+      required: true
+      schema:
+        type: string
+        default: "1.0.0"
+        enum: ["1.0.0"]
+
+  schemas:
+    CatalogEntry:
+      type: object
+      required:
+        - id
+        - title
+        - category
+        - status
+        - createdBy
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        category:
+          type: string
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/CatalogEntryStatus'
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+        metadata:
+          type: object
+          additionalProperties: true
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        abstracts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Abstract'
+
+    CatalogEntryStatus:
+      type: string
+      enum:
+        - DRAFT
+        - PUBLISHED
+        - ARCHIVED
+
+    CatalogEntryCreate:
+      type: object
+      required:
+        - title
+        - category
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        category:
+          type: string
+          maxLength: 100
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+        metadata:
+          type: object
+          additionalProperties: true
+
+    CatalogEntryUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        category:
+          type: string
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/CatalogEntryStatus'
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Abstract:
+      type: object
+      required:
+        - id
+        - catalogEntryId
+        - content
+        - type
+      properties:
+        id:
+          type: string
+          format: uuid
+        catalogEntryId:
+          type: string
+          format: uuid
+        content:
+          type: string
+          maxLength: 1000
+        type:
+          $ref: '#/components/schemas/AbstractType'
+        language:
+          type: string
+          pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+          default: "en"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AbstractType:
+      type: string
+      enum:
+        - SUMMARY
+        - DESCRIPTION
+        - TECHNICAL_OVERVIEW
+        - MARKETING_COPY
+
+    AbstractCreate:
+      type: object
+      required:
+        - content
+        - type
+      properties:
+        content:
+          type: string
+          maxLength: 1000
+        type:
+          $ref: '#/components/schemas/AbstractType'
+        language:
+          type: string
+          pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+          default: "en"
+
+    AbstractUpdate:
+      type: object
+      properties:
+        content:
+          type: string
+          maxLength: 1000
+        type:
+          $ref: '#/components/schemas/AbstractType'
+        language:
+          type: string
+          pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+
+    Category:
+      type: object
+      required:
+        - name
+        - slug
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        slug:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        parentCategory:
+          type: string
+          maxLength: 100
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    CatalogEntryResponse:
+      description: Single catalog entry response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryListResponse:
+      description: List of catalog entries
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryCreatedResponse:
+      description: Catalog entry created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    AbstractResponse:
+      description: Single abstract response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Abstract'
+
+    AbstractListResponse:
+      description: List of abstracts
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Abstract'
+
+    AbstractCreatedResponse:
+      description: Abstract created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Abstract'
+
+    CategoryListResponse:
+      description: List of categories
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Category'
+
+    BadRequestResponse:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFoundResponse:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: Access forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServiceNotAvailableResponse:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  requestBodies:
+    CatalogEntryCreateRequest:
+      description: Catalog entry creation request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryCreate'
+
+    CatalogEntryUpdateRequest:
+      description: Catalog entry update request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryUpdate'
+
+    AbstractCreateRequest:
+      description: Abstract creation request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AbstractCreate'
+
+    AbstractUpdateRequest:
+      description: Abstract update request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AbstractUpdate'
+
+  securitySchemes:
+    openIdConnect:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.catalogmanagement.com/.well-known/openid-configuration
+  
