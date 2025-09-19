@@ -1,1391 +1,1464 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  title: Library Reading API
-  description: API for managing reading sessions, bookmarks, notes, and reading progress tracking
-  version: 1.0.0
+  title: Reading API
+  description: API for managing reading activities, bookmarks, reading positions, and personal notes
   contact:
-    name: Library System Support
-    email: support@library.org
-
+    email: reading-api@example.com
+    name: Library Reading Team
+    url: https://api.library.example.com
+  version: 1.0.0
+  x-api-id: reading-api-003
+  x-audience: internal
 servers:
-  - url: https://api.library.org/reading/v1
-    description: Production server
-  - url: https://staging-api.library.org/reading/v1
-    description: Staging server
-
+  - url: 'https://api.library.example.com/reading'
 security:
-  - BearerAuth: []
-  - MemberAuth: []
-
+  - openIdConnect:
+      - reading:read
+      - reading:write
+      - reading:admin
 tags:
   - name: Reading Sessions
-    description: Managing reading sessions and progress
-  - name: Bookmarks
-    description: Reading position tracking and bookmarks
+    description: Track reading activities and sessions
+  - name: Reading Positions
+    description: Bookmark and reading position management
   - name: Notes
-    description: Reader notes and annotations
+    description: Personal notes and annotations
   - name: Bookshelves
-    description: Personal book organization and collections
-  - name: Reading Statistics
-    description: Reading analytics and progress reports
+    description: Personal book organization and shelving
 
 paths:
   /members/{memberId}/reading-sessions:
     get:
+      description: Get reading sessions for a member
+      operationId: getMemberReadingSessions
       tags:
         - Reading Sessions
-      summary: Get member's reading sessions
-      description: Retrieve all reading sessions for a member, with optional filtering
-      parameters:
-        - name: memberId
-          in: path
-          required: true
-          description: Unique identifier of the library member
-          schema:
-            type: string
-        - name: bookId
-          in: query
-          description: Filter sessions by specific book
-          required: false
-          schema:
-            type: string
-        - name: status
-          in: query
-          description: Filter by session status
-          required: false
-          schema:
-            type: string
-            enum: [active, paused, completed]
-        - name: fromDate
-          in: query
-          description: Filter sessions from this date
-          required: false
-          schema:
-            type: string
-            format: date
-        - name: limit
-          in: query
-          description: Number of sessions to return (default 20, max 100)
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: offset
-          in: query
-          description: Number of sessions to skip for pagination
-          required: false
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-      responses:
-        '200':
-          description: Successfully retrieved reading sessions
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  sessions:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ReadingSession'
-                  pagination:
-                    $ref: '#/components/schemas/Pagination'
-                  summary:
-                    $ref: '#/components/schemas/ReadingSummary'
-              example:
-                sessions:
-                  - id: "RS001"
-                    bookId: "B001"
-                    memberId: "M12345"
-                    title: "The Great Gatsby"
-                    startTime: "2025-09-19T14:00:00Z"
-                    endTime: "2025-09-19T15:30:00Z"
-                    duration: 5400
-                    status: "completed"
-                    startPosition:
-                      page: 45
-                      chapter: 3
-                      percentage: 25.5
-                    endPosition:
-                      page: 67
-                      chapter: 4
-                      percentage: 37.8
-                summary:
-                  totalSessions: 15
-                  totalReadingTime: 45600
-                  booksInProgress: 3
-                  completedBooks: 2
       security:
-        - BearerAuth: []
-        - MemberAuth: []
-
-    post:
-      tags:
-        - Reading Sessions
-      summary: Start a new reading session
-      description: Begin tracking a new reading session for a book
+        - openIdConnect:
+            - reading:read
       parameters:
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - bookId
-              properties:
-                bookId:
-                  type: string
-                  description: ID of the book being read
-                startPosition:
-                  $ref: '#/components/schemas/ReadingPosition'
-                deviceType:
-                  type: string
-                  enum: [physical, ereader, tablet, phone, computer]
-                location:
-                  type: string
-                  description: Where the reading is taking place
-            example:
-              bookId: "B001"
-              startPosition:
-                page: 45
-                chapter: 3
-                percentage: 25.5
-              deviceType: "tablet"
-              location: "Home Library"
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/BookIdFilterParameter'
+        - $ref: '#/components/parameters/DateFromParameter'
+        - $ref: '#/components/parameters/DateToParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/SizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
-        '201':
-          description: Reading session successfully started
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReadingSession'
-              example:
-                id: "RS001"
-                bookId: "B001"
-                memberId: "M12345"
-                title: "The Great Gatsby"
-                startTime: "2025-09-19T14:00:00Z"
-                status: "active"
-                startPosition:
-                  page: 45
-                  chapter: 3
-                  percentage: 25.5
-                deviceType: "tablet"
-                location: "Home Library"
+        '200':
+          $ref: '#/components/responses/ReadingSessionListResponse'
         '400':
-          description: Invalid session data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /reading-sessions/{sessionId}:
-    get:
-      tags:
-        - Reading Sessions
-      summary: Get reading session details
-      description: Retrieve detailed information about a specific reading session
-      parameters:
-        - name: sessionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Reading session details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReadingSession'
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
         '404':
-          description: Reading session not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-    put:
-      tags:
-        - Reading Sessions
-      summary: Update reading session
-      description: Update reading progress and session details
-      parameters:
-        - name: sessionId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                currentPosition:
-                  $ref: '#/components/schemas/ReadingPosition'
-                status:
-                  type: string
-                  enum: [active, paused, completed]
-                notes:
-                  type: string
-                  description: Session notes or reflections
-            example:
-              currentPosition:
-                page: 67
-                chapter: 4
-                percentage: 37.8
-              status: "active"
-              notes: "Interesting character development in this chapter"
-      responses:
-        '200':
-          description: Session successfully updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReadingSession'
-        '404':
-          description: Reading session not found
-
-    delete:
-      tags:
-        - Reading Sessions
-      summary: End reading session
-      description: Complete or cancel a reading session
-      parameters:
-        - name: sessionId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                endPosition:
-                  $ref: '#/components/schemas/ReadingPosition'
-                finalNotes:
-                  type: string
-                rating:
-                  type: integer
-                  minimum: 1
-                  maximum: 5
-                  description: Session or book rating
-            example:
-              endPosition:
-                page: 89
-                chapter: 5
-                percentage: 50.2
-              finalNotes: "Great reading session, really getting into the story"
-              rating: 4
-      responses:
-        '200':
-          description: Session successfully ended
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReadingSession'
-
-  /books/{bookId}/reading-positions:
-    get:
-      tags:
-        - Bookmarks
-      summary: Get reading positions for a book
-      description: Retrieve all bookmarks and reading positions for a specific book
-      parameters:
-        - name: bookId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: memberId
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: type
-          in: query
-          description: Filter by position type
-          required: false
-          schema:
-            type: string
-            enum: [bookmark, last_read, highlight]
-      responses:
-        '200':
-          description: Reading positions retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  positions:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/BookmarkPosition'
-                  currentPosition:
-                    $ref: '#/components/schemas/ReadingPosition'
-                    description: Member's current reading position
-              example:
-                positions:
-                  - id: "BP001"
-                    type: "bookmark"
-                    name: "Important Quote"
-                    position:
-                      page: 42
-                      chapter: 2
-                      percentage: 23.5
-                    createdDate: "2025-09-15T10:30:00Z"
-                    note: "Beautiful description of the green light"
-                currentPosition:
-                  page: 67
-                  chapter: 4
-                  percentage: 37.8
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
     post:
+      description: Start a new reading session
+      operationId: startReadingSession
       tags:
-        - Bookmarks
-      summary: Create reading position bookmark
-      description: Save a bookmark or reading position for a book
+        - Reading Sessions
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: bookId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - memberId
-                - position
-                - type
-              properties:
-                memberId:
-                  type: string
-                position:
-                  $ref: '#/components/schemas/ReadingPosition'
-                type:
-                  type: string
-                  enum: [bookmark, last_read, highlight]
-                name:
-                  type: string
-                  description: Optional name for the bookmark
-                note:
-                  type: string
-                  description: Optional note or annotation
-                isPrivate:
-                  type: boolean
-                  default: true
-                  description: Whether bookmark is private to the member
-            example:
-              memberId: "M12345"
-              position:
-                page: 42
-                chapter: 2
-                percentage: 23.5
-                line: 15
-              type: "bookmark"
-              name: "Green Light Symbol"
-              note: "First appearance of the green light - important symbol"
-              isPrivate: true
+        $ref: '#/components/requestBodies/ReadingSessionToBeCreatedRequest'
       responses:
         '201':
-          description: Bookmark successfully created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BookmarkPosition'
+          $ref: '#/components/responses/LinkToReadingSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /bookmarks/{bookmarkId}:
+  /members/{memberId}/reading-sessions/{sessionId}:
     get:
+      description: Get detailed information about a reading session
+      operationId: getReadingSessionById
       tags:
-        - Bookmarks
-      summary: Get bookmark details
-      description: Retrieve detailed information about a specific bookmark
+        - Reading Sessions
+      security:
+        - openIdConnect:
+            - reading:read
       parameters:
-        - name: bookmarkId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/SessionIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Bookmark details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BookmarkPosition'
+          $ref: '#/components/responses/SingleReadingSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
     put:
+      description: Update or end a reading session
+      operationId: updateReadingSession
       tags:
-        - Bookmarks
-      summary: Update bookmark
-      description: Update bookmark information and position
+        - Reading Sessions
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: bookmarkId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/SessionIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                note:
-                  type: string
-                isPrivate:
-                  type: boolean
-                position:
-                  $ref: '#/components/schemas/ReadingPosition'
+        $ref: '#/components/requestBodies/ReadingSessionToBeUpdatedRequest'
       responses:
         '200':
-          description: Bookmark successfully updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BookmarkPosition'
+          $ref: '#/components/responses/LinkToReadingSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /members/{memberId}/reading-positions:
+    get:
+      description: Get all reading positions/bookmarks for a member
+      operationId: getMemberReadingPositions
+      tags:
+        - Reading Positions
+      security:
+        - openIdConnect:
+            - reading:read
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/BookIdFilterParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/SizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReadingPositionListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    post:
+      description: Save a new reading position/bookmark
+      operationId: createReadingPosition
+      tags:
+        - Reading Positions
+      security:
+        - openIdConnect:
+            - reading:write
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/ReadingPositionToBeCreatedRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/LinkToReadingPositionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /members/{memberId}/reading-positions/{positionId}:
+    get:
+      description: Get detailed information about a reading position
+      operationId: getReadingPositionById
+      tags:
+        - Reading Positions
+      security:
+        - openIdConnect:
+            - reading:read
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/PositionIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/SingleReadingPositionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    put:
+      description: Update a reading position/bookmark
+      operationId: updateReadingPosition
+      tags:
+        - Reading Positions
+      security:
+        - openIdConnect:
+            - reading:write
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/PositionIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/ReadingPositionToBeUpdatedRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/LinkToReadingPositionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
     delete:
+      description: Delete a reading position/bookmark
+      operationId: deleteReadingPosition
       tags:
-        - Bookmarks
-      summary: Delete bookmark
-      description: Remove a bookmark from the system
+        - Reading Positions
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: bookmarkId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/PositionIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
-        '204':
-          description: Bookmark successfully deleted
+        '200':
+          $ref: '#/components/responses/SuccessfulOperationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
   /members/{memberId}/notes:
     get:
+      description: Get all personal notes for a member
+      operationId: getMemberNotes
       tags:
         - Notes
-      summary: Get member's reading notes
-      description: Retrieve all reading notes and annotations for a member
+      security:
+        - openIdConnect:
+            - reading:read
       parameters:
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: bookId
-          in: query
-          description: Filter notes by specific book
-          required: false
-          schema:
-            type: string
-        - name: noteType
-          in: query
-          description: Filter by note type
-          required: false
-          schema:
-            type: string
-            enum: [annotation, reflection, quote, summary]
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/BookIdFilterParameter'
+        - $ref: '#/components/parameters/NoteTypeParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/SizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Successfully retrieved reading notes
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  notes:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ReadingNote'
-                  pagination:
-                    $ref: '#/components/schemas/Pagination'
+          $ref: '#/components/responses/NoteListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
     post:
+      description: Create a new personal note
+      operationId: createNote
       tags:
         - Notes
-      summary: Create reading note
-      description: Add a new note or annotation for a book
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - bookId
-                - content
-                - noteType
-              properties:
-                bookId:
-                  type: string
-                content:
-                  type: string
-                  description: The note content
-                noteType:
-                  type: string
-                  enum: [annotation, reflection, quote, summary]
-                position:
-                  $ref: '#/components/schemas/ReadingPosition'
-                isPrivate:
-                  type: boolean
-                  default: true
-                tags:
-                  type: array
-                  items:
-                    type: string
-                  description: Tags for organizing notes
-            example:
-              bookId: "B001"
-              content: "The green light represents Gatsby's hopes and dreams, always just out of reach."
-              noteType: "annotation"
-              position:
-                page: 42
-                chapter: 2
-                percentage: 23.5
-              isPrivate: true
-              tags: ["symbolism", "themes", "green light"]
+        $ref: '#/components/requestBodies/NoteToBeCreatedRequest'
       responses:
         '201':
-          description: Note successfully created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReadingNote'
+          $ref: '#/components/responses/LinkToNoteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /notes/{noteId}:
+  /members/{memberId}/notes/{noteId}:
     get:
+      description: Get detailed information about a note
+      operationId: getNoteById
       tags:
         - Notes
-      summary: Get note details
-      description: Retrieve detailed information about a specific reading note
+      security:
+        - openIdConnect:
+            - reading:read
       parameters:
-        - name: noteId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/NoteIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Note details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReadingNote'
+          $ref: '#/components/responses/SingleNoteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
     put:
+      description: Update a personal note
+      operationId: updateNote
       tags:
         - Notes
-      summary: Update reading note
-      description: Update the content or metadata of a reading note
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: noteId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/NoteIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                content:
-                  type: string
-                noteType:
-                  type: string
-                  enum: [annotation, reflection, quote, summary]
-                isPrivate:
-                  type: boolean
-                tags:
-                  type: array
-                  items:
-                    type: string
+        $ref: '#/components/requestBodies/NoteToBeUpdatedRequest'
       responses:
         '200':
-          description: Note successfully updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReadingNote'
+          $ref: '#/components/responses/LinkToNoteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
     delete:
+      description: Delete a personal note
+      operationId: deleteNote
       tags:
         - Notes
-      summary: Delete reading note
-      description: Remove a reading note from the system
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: noteId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/NoteIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
-        '204':
-          description: Note successfully deleted
+        '200':
+          $ref: '#/components/responses/SuccessfulOperationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
   /members/{memberId}/bookshelves:
     get:
+      description: Get all personal bookshelves for a member
+      operationId: getMemberBookshelves
       tags:
         - Bookshelves
-      summary: Get member's bookshelves
-      description: Retrieve all bookshelves and book collections for a member
+      security:
+        - openIdConnect:
+            - reading:read
       parameters:
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: includeBooks
-          in: query
-          description: Include books in each shelf
-          required: false
-          schema:
-            type: boolean
-            default: false
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/SizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Successfully retrieved bookshelves
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  bookshelves:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Bookshelf'
-              example:
-                bookshelves:
-                  - id: "BS001"
-                    name: "Currently Reading"
-                    description: "Books I'm actively reading"
-                    memberId: "M12345"
-                    isPrivate: false
-                    bookCount: 3
-                    createdDate: "2025-01-15T09:00:00Z"
-                  - id: "BS002"
-                    name: "Favorites"
-                    description: "My all-time favorite books"
-                    memberId: "M12345"
-                    isPrivate: true
-                    bookCount: 12
-                    createdDate: "2025-01-20T14:30:00Z"
+          $ref: '#/components/responses/BookshelfListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
     post:
+      description: Create a new personal bookshelf
+      operationId: createBookshelf
       tags:
         - Bookshelves
-      summary: Create bookshelf
-      description: Create a new bookshelf or book collection
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                  description: Name of the bookshelf
-                description:
-                  type: string
-                  description: Optional description
-                isPrivate:
-                  type: boolean
-                  default: true
-                  description: Whether the bookshelf is private
-                color:
-                  type: string
-                  description: Optional color theme for the shelf
-            example:
-              name: "Summer Reading List"
-              description: "Books I want to read this summer"
-              isPrivate: false
-              color: "#4A90E2"
+        $ref: '#/components/requestBodies/BookshelfToBeCreatedRequest'
       responses:
         '201':
-          description: Bookshelf successfully created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Bookshelf'
+          $ref: '#/components/responses/LinkToBookshelfResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /bookshelves/{bookshelfId}:
+  /members/{memberId}/bookshelves/{bookshelfId}:
     get:
+      description: Get detailed information about a bookshelf including its books
+      operationId: getBookshelfById
       tags:
         - Bookshelves
-      summary: Get bookshelf details
-      description: Retrieve detailed information about a bookshelf including its books
+      security:
+        - openIdConnect:
+            - reading:read
       parameters:
-        - name: bookshelfId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: includeBooks
-          in: query
-          description: Include books in the response
-          required: false
-          schema:
-            type: boolean
-            default: true
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/BookshelfIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Bookshelf details
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Bookshelf'
-                  - type: object
-                    properties:
-                      books:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/BookshelfBook'
+          $ref: '#/components/responses/SingleBookshelfResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
     put:
+      description: Update bookshelf information
+      operationId: updateBookshelf
       tags:
         - Bookshelves
-      summary: Update bookshelf
-      description: Update bookshelf information
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: bookshelfId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/BookshelfIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                description:
-                  type: string
-                isPrivate:
-                  type: boolean
-                color:
-                  type: string
+        $ref: '#/components/requestBodies/BookshelfToBeUpdatedRequest'
       responses:
         '200':
-          description: Bookshelf successfully updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Bookshelf'
+          $ref: '#/components/responses/LinkToBookshelfResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
     delete:
+      description: Delete a bookshelf
+      operationId: deleteBookshelf
       tags:
         - Bookshelves
-      summary: Delete bookshelf
-      description: Remove a bookshelf and all its book associations
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: bookshelfId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/BookshelfIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
-        '204':
-          description: Bookshelf successfully deleted
+        '200':
+          $ref: '#/components/responses/SuccessfulOperationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /bookshelves/{bookshelfId}/books:
+  /members/{memberId}/bookshelves/{bookshelfId}/books:
     post:
+      description: Add a book to a bookshelf
+      operationId: addBookToBookshelf
       tags:
         - Bookshelves
-      summary: Add book to bookshelf
-      description: Add a book to an existing bookshelf
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: bookshelfId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/BookshelfIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - bookId
-              properties:
-                bookId:
-                  type: string
-                note:
-                  type: string
-                  description: Optional note about why this book is on the shelf
-                priority:
-                  type: integer
-                  minimum: 1
-                  maximum: 5
-                  description: Priority or importance rating
-            example:
-              bookId: "B001"
-              note: "Recommended by professor for American Literature course"
-              priority: 4
+        $ref: '#/components/requestBodies/BookshelfBookRequest'
       responses:
         '201':
-          description: Book successfully added to bookshelf
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BookshelfBook'
+          $ref: '#/components/responses/SuccessfulOperationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '409':
+          $ref: '#/components/responses/ConflictResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
+  /members/{memberId}/bookshelves/{bookshelfId}/books/{bookId}:
     delete:
+      description: Remove a book from a bookshelf
+      operationId: removeBookFromBookshelf
       tags:
         - Bookshelves
-      summary: Remove book from bookshelf
-      description: Remove a book from a bookshelf
+      security:
+        - openIdConnect:
+            - reading:write
       parameters:
-        - name: bookshelfId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: bookId
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Book successfully removed from bookshelf
-
-  /members/{memberId}/reading-statistics:
-    get:
-      tags:
-        - Reading Statistics
-      summary: Get member reading statistics
-      description: Retrieve comprehensive reading analytics and statistics for a member
-      parameters:
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: period
-          in: query
-          description: Time period for statistics
-          required: false
-          schema:
-            type: string
-            enum: [week, month, quarter, year, all]
-            default: month
-        - name: fromDate
-          in: query
-          description: Start date for custom period
-          required: false
-          schema:
-            type: string
-            format: date
-        - name: toDate
-          in: query
-          description: End date for custom period
-          required: false
-          schema:
-            type: string
-            format: date
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/BookshelfIdParameter'
+        - $ref: '#/components/parameters/BookIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Reading statistics
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReadingStatistics'
-              example:
-                period: "month"
-                totalReadingTime: 45600
-                averageSessionLength: 3040
-                booksStarted: 4
-                booksCompleted: 2
-                pagesRead: 456
-                averageReadingSpeed: 1.2
-                favoriteGenres: ["Fiction", "History", "Biography"]
-                readingStreak: 7
-                goals:
-                  booksPerMonth: 3
-                  minutesPerDay: 30
-                  currentProgress: 0.67
+          $ref: '#/components/responses/SuccessfulOperationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
 components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT token for API authentication
-    MemberAuth:
-      type: apiKey
+  parameters:
+    MemberIdParameter:
+      name: memberId
+      description: Member identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 448b5bc-a9bc-4036-8899-c77f781a76d5
+
+    SessionIdParameter:
+      name: sessionId
+      description: Reading session identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 123e4567-e89b-12d3-a456-426614174000
+
+    PositionIdParameter:
+      name: positionId
+      description: Reading position identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 550e8400-e29b-41d4-a716-446655440000
+
+    NoteIdParameter:
+      name: noteId
+      description: Note identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 6ba7b810-9dad-11d1-80b4-00c04fd430c8
+
+    BookshelfIdParameter:
+      name: bookshelfId
+      description: Bookshelf identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 6ba7b811-9dad-11d1-80b4-00c04fd430c8
+
+    BookIdParameter:
+      name: bookId
+      description: Book identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - a07d62e1-5e2e-4e15-b50d-6ed412175443
+
+    BookIdFilterParameter:
+      name: bookId
+      description: Filter by book identifier
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - a07d62e1-5e2e-4e15-b50d-6ed412175443
+
+    DateFromParameter:
+      name: dateFrom
+      description: Filter sessions from this date (inclusive)
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+        examples:
+          - "2024-07-01"
+
+    DateToParameter:
+      name: dateTo
+      description: Filter sessions to this date (inclusive)
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+        examples:
+          - "2024-07-31"
+
+    NoteTypeParameter:
+      name: type
+      description: Filter notes by type
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - ANNOTATION
+          - REVIEW
+          - QUOTE
+          - BOOKMARK
+          - GENERAL
+        examples:
+          - ANNOTATION
+
+    PageParameter:
+      name: page
+      description: Page number for pagination (0-based)
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+        examples:
+          - 0
+
+    SizeParameter:
+      name: size
+      description: Number of results per page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+        examples:
+          - 20
+
+    VersionParameter:
+      name: x-version
+      description: Version of the API specification
       in: header
-      name: X-Member-Token
-      description: Member session token
+      required: true
+      schema:
+        type: string
+        x-extensible-enum:
+          - 1.0.0
+        default: 1.0.0
+        examples:
+          - 1.0.0
+
+  responses:
+    BadRequestResponse:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: Forbidden
+
+    NotFoundResponse:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ConflictResponse:
+      description: Conflict - resource already exists or operation not allowed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServiceNotAvailableResponse:
+      description: Service not available
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    DefaultResponse:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    SuccessfulOperationResponse:
+      description: Successful operation
+
+    LinkToReadingSessionResponse:
+      description: Link to reading session
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Link"
+
+    LinkToReadingPositionResponse:
+      description: Link to reading position
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Link"
+
+    LinkToNoteResponse:
+      description: Link to note
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Link"
+
+    LinkToBookshelfResponse:
+      description: Link to bookshelf
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Link"
+
+    ReadingSessionListResponse:
+      description: List of reading sessions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReadingSessionList'
+
+    SingleReadingSessionResponse:
+      description: Detailed reading session information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReadingSession'
+
+    ReadingPositionListResponse:
+      description: List of reading positions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReadingPositionList'
+
+    SingleReadingPositionResponse:
+      description: Detailed reading position information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReadingPosition'
+
+    NoteListResponse:
+      description: List of notes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NoteList'
+
+    SingleNoteResponse:
+      description: Detailed note information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Note'
+
+    BookshelfListResponse:
+      description: List of bookshelves
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookshelfList'
+
+    SingleBookshelfResponse:
+      description: Detailed bookshelf information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Bookshelf'
+
+  requestBodies:
+    ReadingSessionToBeCreatedRequest:
+      description: Start a new reading session
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReadingSessionToBeCreated'
+
+    ReadingSessionToBeUpdatedRequest:
+      description: Update a reading session
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReadingSession'
+
+    ReadingPositionToBeCreatedRequest:
+      description: Create a new reading position
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReadingPositionToBeCreated'
+
+    ReadingPositionToBeUpdatedRequest:
+      description: Update a reading position
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReadingPosition'
+
+    NoteToBeCreatedRequest:
+      description: Create a new note
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NoteToBeCreated'
+
+    NoteToBeUpdatedRequest:
+      description: Update a note
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Note'
+
+    BookshelfToBeCreatedRequest:
+      description: Create a new bookshelf
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookshelfToBeCreated'
+
+    BookshelfToBeUpdatedRequest:
+      description: Update a bookshelf
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Bookshelf'
+
+    BookshelfBookRequest:
+      description: Add a book to a bookshelf
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookshelfBook'
 
   schemas:
-    ReadingSession:
+    Error:
+      description: An error object used for error responses
       type: object
       required:
-        - id
-        - bookId
-        - memberId
-        - startTime
+        - title
         - status
+        - timestamp
       properties:
-        id:
-          type: string
-          description: Unique session identifier
-        bookId:
-          type: string
-        memberId:
-          type: string
         title:
+          description: A short description of the problem
           type: string
-          description: Book title for convenience
-        isbn:
+          minLength: 2
+          maxLength: 255
+          examples:
+            - reading-session-not-found
+        detail:
+          description: A human-readable description of the problem
           type: string
+          examples:
+            - The requested reading session could not be found.
+        timestamp:
+          description: Point in time when the error occurred
+          type: string
+          format: date-time
+          examples:
+            - 2024-07-01T23:32:54+01:00
+        traceparent:
+          description: Tracking ID of the API journey
+          type: string
+          pattern: ^[0-9]{2}-[0-9a-z]{16}-[0-9a-z]{8}-[0-9a-z]{1}[0-9a-z]{1}$
+          examples:
+            - 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
+        severity:
+          description: Severity of the according error
+          type: string
+          enum:
+            - FATAL
+            - ERROR
+            - WARNING
+            - INFO
+          examples:
+            - ERROR
+
+    Link:
+      description: Link to an entity
+      type: object
+      required:
+        - type
+        - link
+      properties:
+        type:
+          description: Type name of the object
+          type: string
+          minLength: 2
+          maxLength: 155
+          examples:
+            - ReadingSession
+        link:
+          description: URL to the according entity
+          type: string
+          format: uri
+          examples:
+            - https://api.library.example.com/reading/members/74d870fa-9e93-4ffd-907e-038c85e8bc20/reading-sessions/123e4567-e89b-12d3-a456-426614174000
+
+    ReadingSession:
+      description: A reading session tracking when a member reads a book
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ReadingSessionToBeCreated'
+      required:
+        - sessionId
+        - startTime
+      properties:
+        sessionId:
+          description: Unique identifier for the reading session
+          type: string
+          format: uuid
+          examples:
+            - 123e4567-e89b-12d3-a456-426614174000
         startTime:
+          description: When the reading session started
           type: string
           format: date-time
+          examples:
+            - "2024-07-01T10:00:00Z"
         endTime:
+          description: When the reading session ended (null if ongoing)
           type: string
           format: date-time
-        duration:
-          type: integer
-          description: Session duration in seconds
-        status:
+          nullable: true
+          examples:
+            - "2024-07-01T11:30:00Z"
+
+    ReadingSessionToBeCreated:
+      description: Information for creating a reading session
+      type: object
+      required:
+        - bookId
+      properties:
+        bookId:
+          description: ID of the book being read
           type: string
-          enum: [active, paused, completed]
-        startPosition:
-          $ref: '#/components/schemas/ReadingPosition'
-        endPosition:
-          $ref: '#/components/schemas/ReadingPosition'
-        currentPosition:
-          $ref: '#/components/schemas/ReadingPosition'
-        deviceType:
+          format: uuid
+          examples:
+            - a07d62e1-5e2e-4e15-b50d-6ed412175443
+        startingPosition:
+          description: Starting page or position information
           type: string
-          enum: [physical, ereader, tablet, phone, computer]
-        location:
-          type: string
-          description: Reading location
+          maxLength: 100
+          examples:
+            - "Chapter 1, Page 15"
         notes:
+          description: Optional notes about the reading session
           type: string
-          description: Session notes
-        rating:
-          type: integer
-          minimum: 1
-          maximum: 5
-        pagesRead:
+          maxLength: 1000
+          examples:
+            - "Started reading during lunch break"
+
+    ReadingSessionList:
+      description: List of reading sessions
+      type: object
+      required:
+        - sessions
+        - totalElements
+        - page
+        - size
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReadingSession'
+        totalElements:
           type: integer
           minimum: 0
-
-    ReadingPosition:
-      type: object
-      properties:
+          examples:
+            - 250
         page:
           type: integer
-          minimum: 1
-          description: Page number
-        chapter:
-          type: integer
-          minimum: 1
-          description: Chapter number
-        section:
-          type: string
-          description: Section or part identifier
-        percentage:
-          type: number
           minimum: 0
-          maximum: 100
-          description: Percentage completion
-        line:
+          examples:
+            - 0
+        size:
           type: integer
           minimum: 1
-          description: Line number within page
-        characterOffset:
-          type: integer
-          minimum: 0
-          description: Character offset for digital books
-        timestamp:
-          type: string
-          format: date-time
-          description: When this position was recorded
+          examples:
+            - 20
 
-    BookmarkPosition:
+    ReadingPosition:
+      description: A bookmark or reading position in a book
       type: object
+      allOf:
+        - $ref: '#/components/schemas/ReadingPositionToBeCreated'
       required:
-        - id
-        - bookId
-        - memberId
-        - position
-        - type
+        - positionId
+        - createdAt
       properties:
-        id:
+        positionId:
+          description: Unique identifier for the reading position
           type: string
-          description: Unique bookmark identifier
-        bookId:
-          type: string
-        memberId:
-          type: string
-        type:
-          type: string
-          enum: [bookmark, last_read, highlight]
-        name:
-          type: string
-          description: Optional bookmark name
-        position:
-          $ref: '#/components/schemas/ReadingPosition'
-        note:
-          type: string
-          description: Optional annotation or note
-        isPrivate:
-          type: boolean
-          default: true
-        createdDate:
+          format: uuid
+          examples:
+            - 550e8400-e29b-41d4-a716-446655440000
+        createdAt:
+          description: When the position was saved
           type: string
           format: date-time
-        lastModified:
+          examples:
+            - "2024-07-01T10:30:00Z"
+        updatedAt:
+          description: When the position was last updated
           type: string
           format: date-time
-        color:
-          type: string
-          description: Highlight color for visual bookmarks
+          examples:
+            - "2024-07-01T10:35:00Z"
 
-    ReadingNote:
+    ReadingPositionToBeCreated:
+      description: Information for creating a reading position
       type: object
       required:
-        - id
         - bookId
-        - memberId
+        - position
+      properties:
+        bookId:
+          description: ID of the book
+          type: string
+          format: uuid
+          examples:
+            - a07d62e1-5e2e-4e15-b50d-6ed412175443
+        position:
+          description: Position in the book (page number, chapter, etc.)
+          type: string
+          maxLength: 200
+          examples:
+            - "Chapter 5, Page 127"
+        positionType:
+          description: Type of position marker
+          type: string
+          enum:
+            - PAGE
+            - CHAPTER
+            - SECTION
+            - BOOKMARK
+            - LAST_READ
+          examples:
+            - PAGE
+        notes:
+          description: Optional notes about this position
+          type: string
+          maxLength: 500
+          examples:
+            - "Interesting plot twist here"
+
+    ReadingPositionList:
+      description: List of reading positions
+      type: object
+      required:
+        - positions
+        - totalElements
+        - page
+        - size
+      properties:
+        positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReadingPosition'
+        totalElements:
+          type: integer
+          minimum: 0
+          examples:
+            - 50
+        page:
+          type: integer
+          minimum: 0
+          examples:
+            - 0
+        size:
+          type: integer
+          minimum: 1
+          examples:
+            - 20
+
+    Note:
+      description: A personal note or annotation
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/NoteToBeCreated'
+      required:
+        - noteId
+        - createdAt
+      properties:
+        noteId:
+          description: Unique identifier for the note
+          type: string
+          format: uuid
+          examples:
+            - 6ba7b810-9dad-11d1-80b4-00c04fd430c8
+        createdAt:
+          description: When the note was created
+          type: string
+          format: date-time
+          examples:
+            - "2024-07-01T15:30:00Z"
+        updatedAt:
+          description: When the note was last updated
+          type: string
+          format: date-time
+          examples:
+            - "2024-07-01T15:35:00Z"
+
+    NoteToBeCreated:
+      description: Information for creating a note
+      type: object
+      required:
+        - bookId
         - content
         - noteType
       properties:
-        id:
-          type: string
-          description: Unique note identifier
         bookId:
+          description: ID of the book this note relates to
           type: string
-        memberId:
+          format: uuid
+          examples:
+            - a07d62e1-5e2e-4e15-b50d-6ed412175443
+        title:
+          description: Optional title for the note
           type: string
+          maxLength: 200
+          examples:
+            - "Character Analysis - Elizabeth Bennet"
         content:
+          description: Content of the note
           type: string
-          description: The note content
+          maxLength: 5000
+          examples:
+            - "Elizabeth's wit and independence make her a compelling protagonist..."
         noteType:
+          description: Type of note
           type: string
-          enum: [annotation, reflection, quote, summary]
+          enum:
+            - ANNOTATION
+            - REVIEW
+            - QUOTE
+            - BOOKMARK
+            - GENERAL
+          examples:
+            - ANNOTATION
         position:
-          $ref: '#/components/schemas/ReadingPosition'
+          description: Position in the book where this note applies
+          type: string
+          maxLength: 200
+          examples:
+            - "Chapter 3, Page 45"
         isPrivate:
+          description: Whether this note is private to the member
           type: boolean
           default: true
+          examples:
+            - true
         tags:
+          description: Tags for organizing notes
           type: array
           items:
             type: string
-          description: Tags for organizing notes
-        createdDate:
-          type: string
-          format: date-time
-        lastModified:
-          type: string
-          format: date-time
-        title:
-          type: string
-          description: Book title for convenience
-        wordCount:
-          type: integer
-          minimum: 0
-          description: Number of words in the note
+            maxLength: 50
+          examples:
+            - ["character-development", "themes"]
 
-    Bookshelf:
+    NoteList:
+      description: List of notes
       type: object
       required:
-        - id
-        - name
-        - memberId
+        - notes
+        - totalElements
+        - page
+        - size
       properties:
-        id:
-          type: string
-          description: Unique bookshelf identifier
-        name:
-          type: string
-          description: Name of the bookshelf
-        description:
-          type: string
-          description: Optional description
-        memberId:
-          type: string
-        isPrivate:
-          type: boolean
-          default: true
-        color:
-          type: string
-          description: Optional color theme
-        bookCount:
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        totalElements:
           type: integer
           minimum: 0
-          description: Number of books in this shelf
-        createdDate:
+          examples:
+            - 125
+        page:
+          type: integer
+          minimum: 0
+          examples:
+            - 0
+        size:
+          type: integer
+          minimum: 1
+          examples:
+            - 20
+
+    Bookshelf:
+      description: A personal bookshelf for organizing books
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/BookshelfToBeCreated'
+      required:
+        - bookshelfId
+        - createdAt
+      properties:
+        bookshelfId:
+          description: Unique identifier for the bookshelf
+          type: string
+          format: uuid
+          examples:
+            - 6ba7b811-9dad-11d1-80b4-00c04fd430c8
+        createdAt:
+          description: When the bookshelf was created
           type: string
           format: date-time
-        lastModified:
+          examples:
+            - "2024-07-01T09:00:00Z"
+        updatedAt:
+          description: When the bookshelf was last updated
           type: string
           format: date-time
-        sortOrder:
+          examples:
+            - "2024-07-01T09:15:00Z"
+        books:
+          description: Books in this bookshelf
+          type: array
+          items:
+            $ref: '#/components/schemas/BookshelfBook'
+
+    BookshelfToBeCreated:
+      description: Information for creating a bookshelf
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          description: Name of the bookshelf
           type: string
-          enum: [date_added, title, author, rating, custom]
-          default: date_added
+          minLength: 1
+          maxLength: 200
+          examples:
+            - "Science Fiction Favorites"
+        description:
+          description: Description of the bookshelf
+          type: string
+          maxLength: 1000
+          examples:
+            - "My collection of favorite science fiction novels"
+        isPublic:
+          description: Whether this bookshelf is visible to other members
+          type: boolean
+          default: false
+          examples:
+            - false
+        tags:
+          description: Tags for categorizing the bookshelf
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          examples:
+            - ["sci-fi", "favorites", "novels"]
+
+    BookshelfList:
+      description: List of bookshelves
+      type: object
+      required:
+        - bookshelves
+        - totalElements
+        - page
+        - size
+      properties:
+        bookshelves:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bookshelf'
+        totalElements:
+          type: integer
+          minimum: 0
+          examples:
+            - 15
+        page:
+          type: integer
+          minimum: 0
+          examples:
+            - 0
+        size:
+          type: integer
+          minimum: 1
+          examples:
+            - 20
 
     BookshelfBook:
+      description: A book in a bookshelf with additional metadata
       type: object
       required:
         - bookId
-        - bookshelfId
-        - addedDate
       properties:
         bookId:
+          description: ID of the book
           type: string
-        bookshelfId:
-          type: string
-        title:
-          type: string
-          description: Book title for convenience
-        authors:
-          type: array
-          items:
-            type: string
-          description: Author names for convenience
-        isbn:
-          type: string
-        addedDate:
+          format: uuid
+          examples:
+            - a07d62e1-5e2e-4e15-b50d-6ed412175443
+        addedAt:
+          description: When the book was added to the bookshelf
           type: string
           format: date-time
-        note:
-          type: string
-          description: Member's note about this book
-        priority:
+          examples:
+            - "2024-07-01T14:30:00Z"
+        personalRating:
+          description: Member's personal rating of the book
           type: integer
           minimum: 1
           maximum: 5
-        rating:
-          type: integer
-          minimum: 1
-          maximum: 5
+          examples:
+            - 5
         readingStatus:
+          description: Member's reading status for this book
           type: string
-          enum: [want_to_read, currently_reading, completed, abandoned]
-        position:
-          type: integer
-          minimum: 0
-          description: Custom sort position in shelf
-
-    ReadingSummary:
-      type: object
-      properties:
-        totalSessions:
-          type: integer
-          minimum: 0
-        totalReadingTime:
-          type: integer
-          minimum: 0
-          description: Total reading time in seconds
-        averageSessionLength:
-          type: integer
-          minimum: 0
-          description: Average session length in seconds
-        booksInProgress:
-          type: integer
-          minimum: 0
-        completedBooks:
-          type: integer
-          minimum: 0
-        totalBooksStarted:
-          type: integer
-          minimum: 0
-        currentStreak:
-          type: integer
-          minimum: 0
-          description: Current consecutive days of reading
-
-    ReadingStatistics:
-      type: object
-      required:
-        - period
-        - totalReadingTime
-        - booksStarted
-        - booksCompleted
-      properties:
-        period:
+          enum:
+            - WANT_TO_READ
+            - CURRENTLY_READING
+            - READ
+            - DNF
+          examples:
+            - READ
+        personalNotes:
+          description: Personal notes about the book
           type: string
-          description: Time period these statistics cover
-        fromDate:
+          maxLength: 1000
+          examples:
+            - "Brilliant world-building and character development"
+        dateRead:
+          description: Date when the member finished reading the book
           type: string
           format: date
-        toDate:
-          type: string
-          format: date
-        totalReadingTime:
-          type: integer
-          minimum: 0
-          description: Total reading time in seconds
-        averageSessionLength:
-          type: integer
-          minimum: 0
-          description: Average session length in seconds
-        booksStarted:
-          type: integer
-          minimum: 0
-        booksCompleted:
-          type: integer
-          minimum: 0
-        pagesRead:
-          type: integer
-          minimum: 0
-        averageReadingSpeed:
-          type: number
-          minimum: 0
-          description: Pages per minute
-        totalSessions:
-          type: integer
-          minimum: 0
-        longestSession:
-          type: integer
-          minimum: 0
-          description: Longest session in seconds
-        favoriteGenres:
-          type: array
-          items:
-            type: string
-          description: Most read genres in order
-        readingStreak:
-          type: integer
-          minimum: 0
-          description: Current consecutive days of reading
-        bestReadingDay:
-          type: object
-          properties:
-            date:
-              type: string
-              format: date
-            readingTime:
-              type: integer
-              description: Reading time in seconds
-        goals:
-          type: object
-          properties:
-            booksPerMonth:
-              type: integer
-              minimum: 0
-            minutesPerDay:
-              type: integer
-              minimum: 0
-            pagesPerWeek:
-              type: integer
-              minimum: 0
-            currentProgress:
-              type: number
-              minimum: 0
-              maximum: 1
-              description: Progress toward goals (0-1)
-        monthlyBreakdown:
-          type: array
-          items:
-            type: object
-            properties:
-              month:
-                type: string
-                format: date
-              booksCompleted:
-                type: integer
-              readingTime:
-                type: integer
-              averageRating:
-                type: number
+          nullable: true
+          examples:
+            - "2024-06-15"
 
-    Pagination:
-      type: object
-      required:
-        - limit
-        - offset
-        - total
-        - hasMore
-      properties:
-        limit:
-          type: integer
-          minimum: 1
-        offset:
-          type: integer
-          minimum: 0
-        total:
-          type: integer
-          minimum: 0
-        hasMore:
-          type: boolean
-
-    Error:
-      type: object
-      required:
-        - error
-        - message
-      properties:
-        error:
-          type: string
-          description: Error type identifier
-        message:
-          type: string
-          description: Human-readable error message
-        details:
-          type: object
-          description: Additional error details
-        timestamp:
-          type: string
-          format: date-time
+  securitySchemes:
+    openIdConnect:
+      type: openIdConnect
+      description: Security scheme for reading operations
+      openIdConnectUrl: "https://idp.library.example.com/configuration"
