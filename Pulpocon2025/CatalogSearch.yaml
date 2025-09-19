@@ -1,562 +1,821 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  title: Library Catalog Search API
-  description: API for searching and managing library catalog entries, books, and related metadata
-  version: 1.0.0
+  title: Catalog Search API
+  description: API for searching and managing library catalog entries and book information
   contact:
-    name: Library System Support
-    email: support@library.org
-
+    email: library-api@example.com
+    name: Library API Team
+    url: https://api.library.example.com
+  version: 1.0.0
+  x-api-id: catalog-search-api-001
+  x-audience: external-public
 servers:
-  - url: https://api.library.org/catalog/v1
-    description: Production server
-  - url: https://staging-api.library.org/catalog/v1
-    description: Staging server
-
+  - url: 'https://api.library.example.com/catalog'
+security:
+  - openIdConnect:
+      - catalog:read
+      - catalog:write
+      - catalog:admin
 tags:
   - name: Catalog
-    description: Operations related to catalog management
+    description: Catalog management operations
   - name: Books
-    description: Operations related to book information
-  - name: Search
-    description: Search operations across catalog entries
+    description: Book search and information
+  - name: Authors
+    description: Author information management
+  - name: Labels
+    description: Catalog labeling and categorization
 
 paths:
   /catalogs:
     get:
+      description: Retrieve all available catalogs
+      operationId: getCatalogs
       tags:
         - Catalog
-      summary: Get all available catalogs
-      description: Retrieve a list of all available catalogs in the library system
+      security:
+        - openIdConnect:
+            - catalog:read
       parameters:
-        - name: limit
-          in: query
-          description: Number of catalogs to return (default 20, max 100)
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: offset
-          in: query
-          description: Number of catalogs to skip for pagination
-          required: false
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Successfully retrieved catalogs
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  catalogs:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Catalog'
-                  pagination:
-                    $ref: '#/components/schemas/Pagination'
-              example:
-                catalogs:
-                  - id: "main-catalog"
-                    name: "Main Library Catalog"
-                    description: "Primary catalog containing all library holdings"
-                    totalEntries: 125000
-                  - id: "digital-catalog"
-                    name: "Digital Resources Catalog"
-                    description: "Electronic books and digital media"
-                    totalEntries: 15000
-                pagination:
-                  limit: 20
-                  offset: 0
-                  total: 2
-                  hasMore: false
+          $ref: '#/components/responses/CatalogListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    post:
+      description: Create a new catalog
+      operationId: createCatalog
+      tags:
+        - Catalog
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogToBeCreatedRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/LinkToCatalogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
   /catalogs/{catalogId}/entries:
     get:
+      description: Search catalog entries with various criteria
+      operationId: searchCatalogEntries
       tags:
         - Catalog
-      summary: Get catalog entries
-      description: Retrieve catalog entries from a specific catalog
+      security:
+        - openIdConnect:
+            - catalog:read
       parameters:
-        - name: catalogId
-          in: path
-          required: true
-          description: Unique identifier of the catalog
-          schema:
-            type: string
-        - name: limit
-          in: query
-          description: Number of entries to return (default 50, max 200)
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 200
-            default: 50
-        - name: offset
-          in: query
-          description: Number of entries to skip for pagination
-          required: false
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
+        - $ref: '#/components/parameters/CatalogIdParameter'
+        - $ref: '#/components/parameters/TitleSearchParameter'
+        - $ref: '#/components/parameters/AuthorSearchParameter'
+        - $ref: '#/components/parameters/ISBNSearchParameter'
+        - $ref: '#/components/parameters/PublisherSearchParameter'
+        - $ref: '#/components/parameters/LabelSearchParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/SizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Successfully retrieved catalog entries
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  entries:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/CatalogEntry'
-                  pagination:
-                    $ref: '#/components/schemas/Pagination'
-        '404':
-          description: Catalog not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /search:
-    get:
-      tags:
-        - Search
-      summary: Search catalog entries
-      description: Search for books and catalog entries across all catalogs or within a specific catalog
-      parameters:
-        - name: q
-          in: query
-          required: true
-          description: Search query string
-          schema:
-            type: string
-            minLength: 1
-            maxLength: 500
-        - name: catalogId
-          in: query
-          description: Limit search to specific catalog
-          required: false
-          schema:
-            type: string
-        - name: searchFields
-          in: query
-          description: Comma-separated list of fields to search in
-          required: false
-          schema:
-            type: array
-            items:
-              type: string
-              enum: [title, author, isbn, publisher, abstract, subject]
-          style: form
-          explode: false
-        - name: limit
-          in: query
-          description: Number of results to return (default 20, max 100)
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: offset
-          in: query
-          description: Number of results to skip for pagination
-          required: false
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-        - name: sortBy
-          in: query
-          description: Field to sort results by
-          required: false
-          schema:
-            type: string
-            enum: [relevance, title, author, publishDate]
-            default: relevance
-        - name: sortOrder
-          in: query
-          description: Sort order
-          required: false
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: desc
-      responses:
-        '200':
-          description: Search results
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/SearchResult'
-                  pagination:
-                    $ref: '#/components/schemas/Pagination'
-                  searchInfo:
-                    type: object
-                    properties:
-                      query:
-                        type: string
-                      totalMatches:
-                        type: integer
-                      searchTime:
-                        type: number
-                        description: Search execution time in milliseconds
-              example:
-                results:
-                  - catalogEntryId: "CE001"
-                    title: "The Great Gatsby"
-                    authors:
-                      - id: "A001"
-                        name: "F. Scott Fitzgerald"
-                    isbn: "978-0-7432-7356-5"
-                    relevanceScore: 0.95
-                    catalogId: "main-catalog"
-                  - catalogEntryId: "CE002"
-                    title: "To Kill a Mockingbird"
-                    authors:
-                      - id: "A002"
-                        name: "Harper Lee"
-                    isbn: "978-0-06-112008-4"
-                    relevanceScore: 0.87
-                    catalogId: "main-catalog"
-                pagination:
-                  limit: 20
-                  offset: 0
-                  total: 156
-                  hasMore: true
-                searchInfo:
-                  query: "american literature"
-                  totalMatches: 156
-                  searchTime: 45.2
+          $ref: '#/components/responses/CatalogEntryListResponse'
         '400':
-          description: Invalid search parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /books/{bookId}:
-    get:
-      tags:
-        - Books
-      summary: Get book details
-      description: Retrieve detailed information about a specific book
-      parameters:
-        - name: bookId
-          in: path
-          required: true
-          description: Unique identifier of the book
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Book details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Book'
-              example:
-                id: "B001"
-                catalogEntryId: "CE001"
-                isbn: "978-0-7432-7356-5"
-                title: "The Great Gatsby"
-                subtitle: "A Novel"
-                authors:
-                  - id: "A001"
-                    name: "F. Scott Fitzgerald"
-                    givenName: "Francis Scott"
-                publisher: "Scribner"
-                abstract: "Set in the summer of 1922, the novel follows Nick Carraway..."
-                labels: ["Classic", "American Literature", "Fiction"]
-                physicalDetails:
-                  pages: 180
-                  format: "Hardcover"
-                  dimensions: "8.25 x 5.5 x 1 inches"
-                availability:
-                  status: "available"
-                  totalCopies: 5
-                  availableCopies: 3
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
         '404':
-          description: Book not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /catalog-entries/{entryId}:
-    get:
+    post:
+      description: Add a new catalog entry
+      operationId: createCatalogEntry
       tags:
         - Catalog
-      summary: Get catalog entry details
-      description: Retrieve detailed information about a specific catalog entry
+      security:
+        - openIdConnect:
+            - catalog:write
       parameters:
-        - name: entryId
-          in: path
-          required: true
-          description: Unique identifier of the catalog entry
-          schema:
-            type: string
+        - $ref: '#/components/parameters/CatalogIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryToBeCreatedRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/LinkToCatalogEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /catalogs/{catalogId}/entries/{entryId}:
+    get:
+      description: Get detailed information about a specific catalog entry
+      operationId: getCatalogEntryById
+      tags:
+        - Catalog
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+        - $ref: '#/components/parameters/EntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Catalog entry details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CatalogEntry'
+          $ref: '#/components/responses/SingleCatalogEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
         '404':
-          description: Catalog entry not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    put:
+      description: Update a catalog entry
+      operationId: updateCatalogEntry
+      tags:
+        - Catalog
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+        - $ref: '#/components/parameters/EntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryToBeUpdatedRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/LinkToCatalogEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    delete:
+      description: Remove a catalog entry
+      operationId: deleteCatalogEntry
+      tags:
+        - Catalog
+      security:
+        - openIdConnect:
+            - catalog:admin
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+        - $ref: '#/components/parameters/EntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessfulOperationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /authors:
+    get:
+      description: Search authors by name or ID
+      operationId: searchAuthors
+      tags:
+        - Authors
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/AuthorNameSearchParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/SizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthorListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /authors/{authorId}:
+    get:
+      description: Get detailed author information
+      operationId: getAuthorById
+      tags:
+        - Authors
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/AuthorIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/SingleAuthorResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
 components:
+  parameters:
+    CatalogIdParameter:
+      name: catalogId
+      description: Catalog identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 448b5bc-a9bc-4036-8899-c77f781a76d5
+
+    EntryIdParameter:
+      name: entryId
+      description: Catalog entry identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 123e4567-e89b-12d3-a456-426614174000
+
+    AuthorIdParameter:
+      name: authorId
+      description: Author identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 550e8400-e29b-41d4-a716-446655440000
+
+    TitleSearchParameter:
+      name: title
+      description: Search by book title
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 200
+        examples:
+          - "Pride and Prejudice"
+
+    AuthorSearchParameter:
+      name: author
+      description: Search by author name
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 100
+        examples:
+          - "Jane Austen"
+
+    AuthorNameSearchParameter:
+      name: name
+      description: Search authors by name
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 100
+        examples:
+          - "Shakespeare"
+
+    ISBNSearchParameter:
+      name: isbn
+      description: Search by ISBN
+      in: query
+      required: false
+      schema:
+        type: string
+        pattern: '^(978|979)-?\d{1,5}-?\d{1,7}-?\d{1,7}-?\d{1}$'
+        examples:
+          - "978-3-16-148410-0"
+
+    PublisherSearchParameter:
+      name: publisher
+      description: Search by publisher name
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 100
+        examples:
+          - "Penguin Classics"
+
+    LabelSearchParameter:
+      name: labels
+      description: Search by catalog labels/categories
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+          minLength: 1
+          maxLength: 50
+        examples:
+          - ["fiction", "classic"]
+
+    PageParameter:
+      name: page
+      description: Page number for pagination (0-based)
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+        examples:
+          - 0
+
+    SizeParameter:
+      name: size
+      description: Number of results per page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+        examples:
+          - 20
+
+    VersionParameter:
+      name: x-version
+      description: Version of the API specification
+      in: header
+      required: true
+      schema:
+        type: string
+        x-extensible-enum:
+          - 1.0.0
+        default: 1.0.0
+        examples:
+          - 1.0.0
+
+  responses:
+    BadRequestResponse:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: Forbidden
+
+    NotFoundResponse:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServiceNotAvailableResponse:
+      description: Service not available
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    DefaultResponse:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    SuccessfulOperationResponse:
+      description: Successful operation
+
+    LinkToCatalogResponse:
+      description: Link to created catalog
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Link"
+
+    LinkToCatalogEntryResponse:
+      description: Link to catalog entry
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Link"
+
+    CatalogListResponse:
+      description: List of available catalogs
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogList'
+
+    CatalogEntryListResponse:
+      description: List of catalog entries matching search criteria
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryList'
+
+    SingleCatalogEntryResponse:
+      description: Detailed catalog entry information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    AuthorListResponse:
+      description: List of authors
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthorList'
+
+    SingleAuthorResponse:
+      description: Detailed author information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Author'
+
+  requestBodies:
+    CatalogToBeCreatedRequest:
+      description: Create a new catalog
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogToBeCreated'
+
+    CatalogEntryToBeCreatedRequest:
+      description: Create a new catalog entry
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryToBeCreated'
+
+    CatalogEntryToBeUpdatedRequest:
+      description: Update an existing catalog entry
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
   schemas:
-    Catalog:
+    Error:
+      description: An error object used for error responses
       type: object
       required:
-        - id
-        - name
-      properties:
-        id:
-          type: string
-          description: Unique identifier for the catalog
-        name:
-          type: string
-          description: Display name of the catalog
-        description:
-          type: string
-          description: Description of the catalog's contents
-        totalEntries:
-          type: integer
-          description: Total number of entries in this catalog
-        createdDate:
-          type: string
-          format: date-time
-        lastUpdated:
-          type: string
-          format: date-time
-
-    CatalogEntry:
-      type: object
-      required:
-        - id
-        - catalogId
         - title
-      properties:
-        id:
-          type: string
-          description: Unique catalog entry identifier
-        catalogId:
-          type: string
-          description: ID of the catalog containing this entry
-        title:
-          type: string
-          description: Title of the work
-        subtitle:
-          type: string
-          description: Subtitle of the work
-        authors:
-          type: array
-          items:
-            $ref: '#/components/schemas/Author'
-        isbn:
-          type: string
-          pattern: '^(97[89])?[0-9]{9}([0-9]|X)$'
-          description: International Standard Book Number
-        publisher:
-          type: string
-          description: Publisher name
-        abstract:
-          type: string
-          description: Abstract or summary of the work
-        labels:
-          type: array
-          items:
-            type: string
-          description: Subject labels and categories
-        createdDate:
-          type: string
-          format: date-time
-        lastUpdated:
-          type: string
-          format: date-time
-
-    Book:
-      type: object
-      required:
-        - id
-        - catalogEntryId
-        - title
-      properties:
-        id:
-          type: string
-          description: Unique book identifier
-        catalogEntryId:
-          type: string
-          description: Reference to catalog entry
-        isbn:
-          type: string
-          pattern: '^(97[89])?[0-9]{9}([0-9]|X)$'
-        title:
-          type: string
-        subtitle:
-          type: string
-        authors:
-          type: array
-          items:
-            $ref: '#/components/schemas/Author'
-        publisher:
-          type: string
-        abstract:
-          type: string
-        labels:
-          type: array
-          items:
-            type: string
-        physicalDetails:
-          type: object
-          properties:
-            pages:
-              type: integer
-            format:
-              type: string
-              enum: [Hardcover, Paperback, eBook, Audiobook]
-            dimensions:
-              type: string
-            weight:
-              type: string
-        availability:
-          $ref: '#/components/schemas/BookAvailability'
-
-    Author:
-      type: object
-      required:
-        - id
-        - name
-      properties:
-        id:
-          type: string
-          description: Unique author identifier
-        name:
-          type: string
-          description: Full author name
-        givenName:
-          type: string
-          description: Author's given/first name
-        familyName:
-          type: string
-          description: Author's family/last name
-        biography:
-          type: string
-          description: Brief author biography
-
-    BookAvailability:
-      type: object
-      required:
         - status
-        - totalCopies
-        - availableCopies
+        - timestamp
       properties:
-        status:
+        title:
+          description: A short description of the problem
           type: string
-          enum: [available, checked_out, reserved, maintenance, lost]
-        totalCopies:
-          type: integer
-          minimum: 0
-        availableCopies:
-          type: integer
-          minimum: 0
-        reservationCount:
-          type: integer
-          minimum: 0
-        nextAvailableDate:
+          minLength: 2
+          maxLength: 255
+          examples:
+            - catalog-entry-not-found
+        detail:
+          description: A human-readable description of the problem
           type: string
-          format: date
+          examples:
+            - The requested catalog entry could not be found.
+        timestamp:
+          description: Point in time when the error occurred
+          type: string
+          format: date-time
+          examples:
+            - 2024-07-01T23:32:54+01:00
+        traceparent:
+          description: Tracking ID of the API journey
+          type: string
+          pattern: ^[0-9]{2}-[0-9a-z]{16}-[0-9a-z]{8}-[0-9a-z]{1}[0-9a-z]{1}$
+          examples:
+            - 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
+        severity:
+          description: Severity of the according error
+          type: string
+          enum:
+            - FATAL
+            - ERROR
+            - WARNING
+            - INFO
+          examples:
+            - ERROR
 
-    SearchResult:
+    Link:
+      description: Link to an entity
       type: object
       required:
-        - catalogEntryId
-        - title
-        - relevanceScore
+        - type
+        - link
       properties:
-        catalogEntryId:
+        type:
+          description: Type name of the object
           type: string
-        title:
+          minLength: 2
+          maxLength: 155
+          examples:
+            - CatalogEntry
+        link:
+          description: URL to the according entity
           type: string
-        subtitle:
+          format: uri
+          examples:
+            - https://api.library.example.com/catalog/entries/74d870fa-9e93-4ffd-907e-038c85e8bc20
+
+    Catalog:
+      description: A library catalog containing multiple entries
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CatalogToBeCreated'
+      required:
+        - id
+      properties:
+        id:
+          description: Unique identifier for the catalog
           type: string
-        authors:
+          format: uuid
+          examples:
+            - a07d62e1-5e2e-4e15-b50d-6ed412175443
+
+    CatalogToBeCreated:
+      description: Catalog information for creation
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          description: Name of the catalog
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples:
+            - "Main Library Catalog"
+        description:
+          description: Description of the catalog
+          type: string
+          maxLength: 1000
+          examples:
+            - "Primary catalog for the central library branch"
+
+    CatalogList:
+      description: List of catalogs
+      type: object
+      required:
+        - catalogs
+        - totalElements
+        - page
+        - size
+      properties:
+        catalogs:
           type: array
           items:
-            $ref: '#/components/schemas/Author'
-        isbn:
-          type: string
-        publisher:
-          type: string
-        relevanceScore:
-          type: number
+            $ref: '#/components/schemas/Catalog'
+        totalElements:
+          type: integer
           minimum: 0
-          maximum: 1
-          description: Search relevance score (0-1)
-        catalogId:
-          type: string
-        snippet:
-          type: string
-          description: Relevant text excerpt showing match context
-
-    Pagination:
-      type: object
-      required:
-        - limit
-        - offset
-        - total
-        - hasMore
-      properties:
-        limit:
+          examples:
+            - 150
+        page:
+          type: integer
+          minimum: 0
+          examples:
+            - 0
+        size:
           type: integer
           minimum: 1
-        offset:
-          type: integer
-          minimum: 0
-        total:
-          type: integer
-          minimum: 0
-        hasMore:
-          type: boolean
+          examples:
+            - 20
 
-    Error:
+    CatalogEntry:
+      description: A catalog entry representing a book or publication
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CatalogEntryToBeCreated'
+      required:
+        - catalogEntryId
+      properties:
+        catalogEntryId:
+          description: Unique identifier for the catalog entry
+          type: string
+          format: uuid
+          examples:
+            - 123e4567-e89b-12d3-a456-426614174000
+
+    CatalogEntryToBeCreated:
+      description: Catalog entry information for creation
       type: object
       required:
-        - error
-        - message
+        - title
+        - author
       properties:
-        error:
+        title:
+          description: Title of the book
           type: string
-          description: Error type identifier
-        message:
+          minLength: 1
+          maxLength: 500
+          examples:
+            - "Pride and Prejudice"
+        subtitle:
+          description: Subtitle of the book
           type: string
-          description: Human-readable error message
-        details:
-          type: object
-          description: Additional error details
-        timestamp:
+          maxLength: 500
+          examples:
+            - "A Novel of Manners"
+        abstract:
+          description: Abstract or summary of the book
           type: string
-          format: date-time
-  
+          maxLength: 2000
+          examples:
+            - "A classic novel about love, reputation, and class in Georgian England"
+        isbn:
+          description: International Standard Book Number
+          type: string
+          pattern: '^(978|979)-?\d{1,5}-?\d{1,7}-?\d{1,7}-?\d{1}$'
+          examples:
+            - "978-0-14-143951-8"
+        publisher:
+          description: Publisher of the book
+          type: string
+          maxLength: 200
+          examples:
+            - "Penguin Classics"
+        author:
+          $ref: '#/components/schemas/Author'
+        labels:
+          description: Categorization labels for the entry
+          type: array
+          items:
+            $ref: '#/components/schemas/Label'
+
+    CatalogEntryList:
+      description: List of catalog entries with pagination
+      type: object
+      required:
+        - entries
+        - totalElements
+        - page
+        - size
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogEntry'
+        totalElements:
+          type: integer
+          minimum: 0
+          examples:
+            - 1250
+        page:
+          type: integer
+          minimum: 0
+          examples:
+            - 0
+        size:
+          type: integer
+          minimum: 1
+          examples:
+            - 20
+
+    Author:
+      description: Author information
+      type: object
+      required:
+        - authorId
+        - authorName
+      properties:
+        authorId:
+          description: Unique identifier for the author
+          type: string
+          format: uuid
+          examples:
+            - 550e8400-e29b-41d4-a716-446655440000
+        authorName:
+          description: Full name of the author
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples:
+            - "Jane Austen"
+        authorGivenName:
+          description: Given (first) name of the author
+          type: string
+          maxLength: 100
+          examples:
+            - "Jane"
+
+    AuthorList:
+      description: List of authors
+      type: object
+      required:
+        - authors
+        - totalElements
+        - page
+        - size
+      properties:
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'
+        totalElements:
+          type: integer
+          minimum: 0
+          examples:
+            - 500
+        page:
+          type: integer
+          minimum: 0
+          examples:
+            - 0
+        size:
+          type: integer
+          minimum: 1
+          examples:
+            - 20
+
+    Label:
+      description: Categorization label for catalog entries
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          description: Name of the label/category
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - "fiction"
+        description:
+          description: Description of what this label represents
+          type: string
+          maxLength: 500
+          examples:
+            - "Works of fiction and imaginative literature"
+
+  securitySchemes:
+    openIdConnect:
+      type: openIdConnect
+      description: Security scheme for catalog search
+      openIdConnectUrl: "https://idp.library.example.com/configuration"
