@@ -1,819 +1,1111 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  title: Library Lending API
-  description: API for managing book lending, borrowing, reservations, and member transactions
-  version: 1.0.0
+  title: Lending Books API
+  description: API for managing book lending operations, member management, and loan transactions
   contact:
-    name: Library System Support
-    email: support@library.org
-
+    email: lending-api@example.com
+    name: Library Lending Team
+    url: https://api.library.example.com
+  version: 1.0.0
+  x-api-id: lending-books-api-002
+  x-audience: internal
 servers:
-  - url: https://api.library.org/lending/v1
-    description: Production server
-  - url: https://staging-api.library.org/lending/v1
-    description: Staging server
-
+  - url: 'https://api.library.example.com/lending'
 security:
-  - BearerAuth: []
-  - MemberAuth: []
-
+  - openIdConnect:
+      - lending:read
+      - lending:write
+      - lending:admin
 tags:
   - name: Members
     description: Library member management
-  - name: Borrowing
-    description: Book borrowing operations
-  - name: Reservations
-    description: Book reservation management
-  - name: Transactions
-    description: Lending transaction history
+  - name: Books
+    description: Physical book inventory management
+  - name: Loans
+    description: Book lending and borrowing operations
 
 paths:
-  /members/{memberId}/profile:
+  /members:
     get:
+      description: Retrieve all library members with optional filtering
+      operationId: getMembers
       tags:
         - Members
-      summary: Get member profile
-      description: Retrieve member information and current lending status
-      parameters:
-        - name: memberId
-          in: path
-          required: true
-          description: Unique identifier of the library member
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Member profile information
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MemberProfile'
-              example:
-                id: "M12345"
-                name: "John Doe"
-                email: "john.doe@email.com"
-                membershipType: "standard"
-                memberSince: "2020-01-15"
-                status: "active"
-                currentBorrowings: 3
-                maxBorrowings: 5
-                overdueItems: 0
-                totalFines: 0.00
-                reservations: 1
-        '404':
-          description: Member not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
       security:
-        - BearerAuth: []
-        - MemberAuth: []
+        - openIdConnect:
+            - lending:read
+      parameters:
+        - $ref: '#/components/parameters/MemberNameSearchParameter'
+        - $ref: '#/components/parameters/MemberStatusParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/SizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/MemberListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /members/{memberId}/borrowed-books:
-    get:
+    post:
+      description: Register a new library member
+      operationId: createMember
       tags:
         - Members
-      summary: Get member's borrowed books
-      description: Retrieve all books currently borrowed by a member
+      security:
+        - openIdConnect:
+            - lending:write
       parameters:
-        - name: memberId
-          in: path
-          required: true
-          description: Unique identifier of the library member
-          schema:
-            type: string
-        - name: includeHistory
-          in: query
-          description: Include historical borrowing records
-          required: false
-          schema:
-            type: boolean
-            default: false
-        - name: status
-          in: query
-          description: Filter by borrowing status
-          required: false
-          schema:
-            type: string
-            enum: [active, overdue, returned]
-      responses:
-        '200':
-          description: List of borrowed books
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  borrowedBooks:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/BorrowedBook'
-                  summary:
-                    $ref: '#/components/schemas/BorrowingSummary'
-              example:
-                borrowedBooks:
-                  - id: "BR001"
-                    bookId: "B001"
-                    title: "The Great Gatsby"
-                    isbn: "978-0-7432-7356-5"
-                    borrowDate: "2025-09-01T10:00:00Z"
-                    dueDate: "2025-09-15T23:59:59Z"
-                    status: "active"
-                    renewalsUsed: 0
-                    maxRenewals: 2
-                summary:
-                  totalActive: 3
-                  totalOverdue: 0
-                  totalReturned: 47
-
-  /books/{bookId}/borrow:
-    post:
-      tags:
-        - Borrowing
-      summary: Borrow a book
-      description: Process a book borrowing request for a library member
-      parameters:
-        - name: bookId
-          in: path
-          required: true
-          description: Unique identifier of the book to borrow
-          schema:
-            type: string
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - memberId
-              properties:
-                memberId:
-                  type: string
-                  description: ID of the member borrowing the book
-                lendingPeriodDays:
-                  type: integer
-                  minimum: 1
-                  maximum: 30
-                  default: 14
-                  description: Number of days for the lending period
-            example:
-              memberId: "M12345"
-              lendingPeriodDays: 14
+        $ref: '#/components/requestBodies/MemberToBeCreatedRequest'
       responses:
         '201':
-          description: Book successfully borrowed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BorrowTransaction'
-              example:
-                id: "BR001"
-                bookId: "B001"
-                memberId: "M12345"
-                borrowDate: "2025-09-19T14:30:00Z"
-                dueDate: "2025-10-03T23:59:59Z"
-                status: "active"
-                renewalsUsed: 0
-                maxRenewals: 2
+          $ref: '#/components/responses/LinkToMemberResponse'
         '400':
-          description: Invalid borrowing request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "BORROWING_LIMIT_EXCEEDED"
-                message: "Member has reached maximum borrowing limit"
-                details:
-                  currentBorrowings: 5
-                  maxBorrowings: 5
-        '404':
-          description: Book or member not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '409':
-          description: Book not available for borrowing
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "BOOK_NOT_AVAILABLE"
-                message: "Book is currently checked out"
-                details:
-                  availableCopies: 0
-                  nextAvailableDate: "2025-09-25"
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /borrowed-books/{borrowId}/return:
-    post:
+  /members/{memberId}:
+    get:
+      description: Get detailed information about a specific member
+      operationId: getMemberById
       tags:
-        - Borrowing
-      summary: Return a borrowed book
-      description: Process the return of a borrowed book
+        - Members
+      security:
+        - openIdConnect:
+            - lending:read
       parameters:
-        - name: borrowId
-          in: path
-          required: true
-          description: Unique identifier of the borrowing transaction
-          schema:
-            type: string
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                condition:
-                  type: string
-                  enum: [excellent, good, fair, damaged, lost]
-                  default: good
-                notes:
-                  type: string
-                  description: Any notes about the book condition
-            example:
-              condition: "good"
-              notes: "Book returned in excellent condition"
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Book successfully returned
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  borrowTransaction:
-                    $ref: '#/components/schemas/BorrowTransaction'
-                  fines:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Fine'
-                  returnDate:
-                    type: string
-                    format: date-time
-              example:
-                borrowTransaction:
-                  id: "BR001"
-                  status: "returned"
-                  returnDate: "2025-09-19T16:45:00Z"
-                fines: []
-                returnDate: "2025-09-19T16:45:00Z"
+          $ref: '#/components/responses/SingleMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
         '404':
-          description: Borrowing transaction not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /borrowed-books/{borrowId}/renew:
-    post:
+    put:
+      description: Update member information
+      operationId: updateMember
       tags:
-        - Borrowing
-      summary: Renew a borrowed book
-      description: Extend the due date of a borrowed book
+        - Members
+      security:
+        - openIdConnect:
+            - lending:write
       parameters:
-        - name: borrowId
-          in: path
-          required: true
-          description: Unique identifier of the borrowing transaction
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                extensionDays:
-                  type: integer
-                  minimum: 1
-                  maximum: 14
-                  default: 14
-            example:
-              extensionDays: 14
+        $ref: '#/components/requestBodies/MemberToBeUpdatedRequest'
       responses:
         '200':
-          description: Book successfully renewed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BorrowTransaction'
-              example:
-                id: "BR001"
-                bookId: "B001"
-                memberId: "M12345"
-                borrowDate: "2025-09-01T10:00:00Z"
-                dueDate: "2025-09-29T23:59:59Z"
-                renewalDate: "2025-09-19T16:45:00Z"
-                status: "active"
-                renewalsUsed: 1
-                maxRenewals: 2
+          $ref: '#/components/responses/LinkToMemberResponse'
         '400':
-          description: Renewal not allowed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "RENEWAL_LIMIT_EXCEEDED"
-                message: "Maximum renewals already used"
-                details:
-                  renewalsUsed: 2
-                  maxRenewals: 2
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /books/{bookId}/reserve:
-    post:
+  /members/{memberId}/loans:
+    get:
+      description: Get current and historical loans for a member
+      operationId: getMemberLoans
       tags:
-        - Reservations
-      summary: Reserve a book
-      description: Create a reservation for a book that is currently unavailable
+        - Loans
+      security:
+        - openIdConnect:
+            - lending:read
       parameters:
-        - name: bookId
-          in: path
-          required: true
-          description: Unique identifier of the book to reserve
-          schema:
-            type: string
+        - $ref: '#/components/parameters/MemberIdParameter'
+        - $ref: '#/components/parameters/LoanStatusParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/SizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/LoanListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /books:
+    get:
+      description: Retrieve available books for lending
+      operationId: getAvailableBooks
+      tags:
+        - Books
+      security:
+        - openIdConnect:
+            - lending:read
+      parameters:
+        - $ref: '#/components/parameters/BookTitleSearchParameter'
+        - $ref: '#/components/parameters/BookISBNSearchParameter'
+        - $ref: '#/components/parameters/AvailabilityStatusParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/SizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/BookListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    post:
+      description: Add a new physical book to the lending inventory
+      operationId: createBook
+      tags:
+        - Books
+      security:
+        - openIdConnect:
+            - lending:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - memberId
-              properties:
-                memberId:
-                  type: string
-                  description: ID of the member making the reservation
-                priority:
-                  type: string
-                  enum: [normal, urgent]
-                  default: normal
-                notes:
-                  type: string
-            example:
-              memberId: "M12345"
-              priority: "normal"
-              notes: "Needed for research project"
+        $ref: '#/components/requestBodies/BookToBeCreatedRequest'
       responses:
         '201':
-          description: Reservation successfully created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Reservation'
-              example:
-                id: "R001"
-                bookId: "B001"
-                memberId: "M12345"
-                reservationDate: "2025-09-19T14:30:00Z"
-                status: "active"
-                queuePosition: 3
-                estimatedAvailableDate: "2025-10-05"
-                expiryDate: "2025-10-12T23:59:59Z"
+          $ref: '#/components/responses/LinkToBookResponse'
         '400':
-          description: Invalid reservation request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '409':
-          description: Book is available or member already has reservation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /reservations/{reservationId}:
+  /books/{bookId}:
     get:
+      description: Get detailed information about a physical book
+      operationId: getBookById
       tags:
-        - Reservations
-      summary: Get reservation details
-      description: Retrieve details of a specific reservation
+        - Books
+      security:
+        - openIdConnect:
+            - lending:read
       parameters:
-        - name: reservationId
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/BookIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Reservation details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Reservation'
-
-    delete:
-      tags:
-        - Reservations
-      summary: Cancel reservation
-      description: Cancel an active reservation
-      parameters:
-        - name: reservationId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Reservation successfully cancelled
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  cancellationDate:
-                    type: string
-                    format: date-time
+          $ref: '#/components/responses/SingleBookResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
         '404':
-          description: Reservation not found
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
-  /members/{memberId}/transactions:
-    get:
+    put:
+      description: Update book information
+      operationId: updateBook
       tags:
-        - Transactions
-      summary: Get member transaction history
-      description: Retrieve lending transaction history for a member
+        - Books
+      security:
+        - openIdConnect:
+            - lending:write
       parameters:
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-        - name: fromDate
-          in: query
-          description: Filter transactions from this date
-          schema:
-            type: string
-            format: date
-        - name: toDate
-          in: query
-          description: Filter transactions to this date
-          schema:
-            type: string
-            format: date
-        - name: transactionType
-          in: query
-          schema:
-            type: string
-            enum: [borrow, return, renewal, reservation, fine]
+        - $ref: '#/components/parameters/BookIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/BookToBeUpdatedRequest'
       responses:
         '200':
-          description: Transaction history
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  transactions:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Transaction'
-                  pagination:
-                    $ref: '#/components/schemas/Pagination'
+          $ref: '#/components/responses/LinkToBookResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /loans:
+    get:
+      description: Get all loans with optional filtering
+      operationId: getAllLoans
+      tags:
+        - Loans
+      security:
+        - openIdConnect:
+            - lending:read
+      parameters:
+        - $ref: '#/components/parameters/LoanStatusParameter'
+        - $ref: '#/components/parameters/OverdueParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/SizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/LoanListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    post:
+      description: Create a new loan (member borrows a book)
+      operationId: createLoan
+      tags:
+        - Loans
+      security:
+        - openIdConnect:
+            - lending:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/LoanToBeCreatedRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/LinkToLoanResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '409':
+          $ref: '#/components/responses/ConflictResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /loans/{loanId}:
+    get:
+      description: Get detailed information about a specific loan
+      operationId: getLoanById
+      tags:
+        - Loans
+      security:
+        - openIdConnect:
+            - lending:read
+      parameters:
+        - $ref: '#/components/parameters/LoanIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/SingleLoanResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    put:
+      description: Update loan information (extend due date, etc.)
+      operationId: updateLoan
+      tags:
+        - Loans
+      security:
+        - openIdConnect:
+            - lending:write
+      parameters:
+        - $ref: '#/components/parameters/LoanIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/LoanToBeUpdatedRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/LinkToLoanResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /loans/{loanId}/return:
+    post:
+      description: Return a borrowed book
+      operationId: returnBook
+      tags:
+        - Loans
+      security:
+        - openIdConnect:
+            - lending:write
+      parameters:
+        - $ref: '#/components/parameters/LoanIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/BookReturnRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessfulOperationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '409':
+          $ref: '#/components/responses/ConflictResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
 
 components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT token for API authentication
-    MemberAuth:
-      type: apiKey
+  parameters:
+    MemberIdParameter:
+      name: memberId
+      description: Member identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 448b5bc-a9bc-4036-8899-c77f781a76d5
+
+    BookIdParameter:
+      name: bookId
+      description: Book identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 123e4567-e89b-12d3-a456-426614174000
+
+    LoanIdParameter:
+      name: loanId
+      description: Loan identifier
+      required: true
+      in: path
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 550e8400-e29b-41d4-a716-446655440000
+
+    MemberNameSearchParameter:
+      name: name
+      description: Search members by name
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 100
+        examples:
+          - "John Smith"
+
+    MemberStatusParameter:
+      name: status
+      description: Filter members by status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - ACTIVE
+          - SUSPENDED
+          - EXPIRED
+        examples:
+          - ACTIVE
+
+    BookTitleSearchParameter:
+      name: title
+      description: Search books by title
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 200
+        examples:
+          - "Pride and Prejudice"
+
+    BookISBNSearchParameter:
+      name: isbn
+      description: Search books by ISBN
+      in: query
+      required: false
+      schema:
+        type: string
+        pattern: '^(978|979)-?\d{1,5}-?\d{1,7}-?\d{1,7}-?\d{1}$'
+        examples:
+          - "978-3-16-148410-0"
+
+    AvailabilityStatusParameter:
+      name: availability
+      description: Filter books by availability status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - AVAILABLE
+          - BORROWED
+          - RESERVED
+          - MAINTENANCE
+        examples:
+          - AVAILABLE
+
+    LoanStatusParameter:
+      name: status
+      description: Filter loans by status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - ACTIVE
+          - RETURNED
+          - OVERDUE
+        examples:
+          - ACTIVE
+
+    OverdueParameter:
+      name: overdue
+      description: Filter for overdue loans only
+      in: query
+      required: false
+      schema:
+        type: boolean
+        examples:
+          - true
+
+    PageParameter:
+      name: page
+      description: Page number for pagination (0-based)
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+        examples:
+          - 0
+
+    SizeParameter:
+      name: size
+      description: Number of results per page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+        examples:
+          - 20
+
+    VersionParameter:
+      name: x-version
+      description: Version of the API specification
       in: header
-      name: X-Member-Token
-      description: Member session token
+      required: true
+      schema:
+        type: string
+        x-extensible-enum:
+          - 1.0.0
+        default: 1.0.0
+        examples:
+          - 1.0.0
+
+  responses:
+    BadRequestResponse:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: Forbidden
+
+    NotFoundResponse:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ConflictResponse:
+      description: Conflict - resource already exists or operation not allowed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServiceNotAvailableResponse:
+      description: Service not available
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    DefaultResponse:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    SuccessfulOperationResponse:
+      description: Successful operation
+
+    LinkToMemberResponse:
+      description: Link to member
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Link"
+
+    LinkToBookResponse:
+      description: Link to book
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Link"
+
+    LinkToLoanResponse:
+      description: Link to loan
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Link"
+
+    MemberListResponse:
+      description: List of library members
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MemberList'
+
+    SingleMemberResponse:
+      description: Detailed member information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Member'
+
+    BookListResponse:
+      description: List of books available for lending
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookList'
+
+    SingleBookResponse:
+      description: Detailed book information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Book'
+
+    LoanListResponse:
+      description: List of loans
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LoanList'
+
+    SingleLoanResponse:
+      description: Detailed loan information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Loan'
+
+  requestBodies:
+    MemberToBeCreatedRequest:
+      description: Create a new library member
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MemberToBeCreated'
+
+    MemberToBeUpdatedRequest:
+      description: Update an existing member
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Member'
+
+    BookToBeCreatedRequest:
+      description: Add a new physical book to inventory
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookToBeCreated'
+
+    BookToBeUpdatedRequest:
+      description: Update book information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Book'
+
+    LoanToBeCreatedRequest:
+      description: Create a new loan
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LoanToBeCreated'
+
+    LoanToBeUpdatedRequest:
+      description: Update loan information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Loan'
+
+    BookReturnRequest:
+      description: Return a borrowed book
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookReturn'
 
   schemas:
-    MemberProfile:
+    Error:
+      description: An error object used for error responses
       type: object
       required:
-        - id
-        - name
-        - email
-        - membershipType
+        - title
         - status
+        - timestamp
       properties:
-        id:
+        title:
+          description: A short description of the problem
           type: string
-          description: Unique member identifier
-        name:
+          minLength: 2
+          maxLength: 255
+          examples:
+            - book-not-available
+        detail:
+          description: A human-readable description of the problem
           type: string
-          description: Member's full name
+          examples:
+            - The requested book is currently borrowed by another member.
+        timestamp:
+          description: Point in time when the error occurred
+          type: string
+          format: date-time
+          examples:
+            - 2024-07-01T23:32:54+01:00
+        traceparent:
+          description: Tracking ID of the API journey
+          type: string
+          pattern: ^[0-9]{2}-[0-9a-z]{16}-[0-9a-z]{8}-[0-9a-z]{1}[0-9a-z]{1}$
+          examples:
+            - 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
+        severity:
+          description: Severity of the according error
+          type: string
+          enum:
+            - FATAL
+            - ERROR
+            - WARNING
+            - INFO
+          examples:
+            - ERROR
+
+    Link:
+      description: Link to an entity
+      type: object
+      required:
+        - type
+        - link
+      properties:
+        type:
+          description: Type name of the object
+          type: string
+          minLength: 2
+          maxLength: 155
+          examples:
+            - Member
+        link:
+          description: URL to the according entity
+          type: string
+          format: uri
+          examples:
+            - https://api.library.example.com/lending/members/74d870fa-9e93-4ffd-907e-038c85e8bc20
+
+    Member:
+      description: Library member information
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/MemberToBeCreated'
+      required:
+        - memberId
+      properties:
+        memberId:
+          description: Unique identifier for the member
+          type: string
+          format: uuid
+          examples:
+            - a07d62e1-5e2e-4e15-b50d-6ed412175443
+
+    MemberToBeCreated:
+      description: Member information for registration
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+      properties:
+        firstName:
+          description: Member's first name
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - "John"
+        lastName:
+          description: Member's last name
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - "Smith"
         email:
+          description: Member's email address
           type: string
           format: email
+          examples:
+            - "john.smith@example.com"
         phone:
+          description: Member's phone number
           type: string
+          pattern: '^\+?[\d\s\-\(\)]+$'
+          examples:
+            - "+1-555-123-4567"
+        address:
+          description: Member's address
+          type: string
+          maxLength: 500
+          examples:
+            - "123 Main St, City, State 12345"
         membershipType:
+          description: Type of membership
           type: string
-          enum: [student, faculty, staff, community, premium]
-        memberSince:
-          type: string
-          format: date
+          enum:
+            - STANDARD
+            - PREMIUM
+            - STUDENT
+            - SENIOR
+          examples:
+            - STANDARD
         status:
+          description: Current status of the member
           type: string
-          enum: [active, suspended, expired, inactive]
-        currentBorrowings:
-          type: integer
-          minimum: 0
-        maxBorrowings:
-          type: integer
-          minimum: 0
-        overdueItems:
-          type: integer
-          minimum: 0
-        totalFines:
-          type: number
-          format: decimal
-          minimum: 0
-        reservations:
-          type: integer
-          minimum: 0
+          enum:
+            - ACTIVE
+            - SUSPENDED
+            - EXPIRED
+          examples:
+            - ACTIVE
 
-    BorrowedBook:
+    MemberList:
+      description: List of library members
       type: object
       required:
-        - id
-        - bookId
-        - memberId
-        - borrowDate
-        - dueDate
-        - status
+        - members
+        - totalElements
+        - page
+        - size
       properties:
-        id:
-          type: string
-          description: Unique borrowing transaction identifier
-        bookId:
-          type: string
-        memberId:
-          type: string
-        title:
-          type: string
-          description: Book title for convenience
-        isbn:
-          type: string
-        borrowDate:
-          type: string
-          format: date-time
-        dueDate:
-          type: string
-          format: date-time
-        returnDate:
-          type: string
-          format: date-time
-        renewalDate:
-          type: string
-          format: date-time
-        status:
-          type: string
-          enum: [active, overdue, returned, lost]
-        renewalsUsed:
-          type: integer
-          minimum: 0
-        maxRenewals:
-          type: integer
-          minimum: 0
-        condition:
-          type: string
-          enum: [excellent, good, fair, damaged, lost]
-        fines:
+        members:
           type: array
           items:
-            $ref: '#/components/schemas/Fine'
-
-    BorrowTransaction:
-      type: object
-      required:
-        - id
-        - bookId
-        - memberId
-        - borrowDate
-        - dueDate
-        - status
-      properties:
-        id:
-          type: string
-        bookId:
-          type: string
-        memberId:
-          type: string
-        borrowDate:
-          type: string
-          format: date-time
-        dueDate:
-          type: string
-          format: date-time
-        returnDate:
-          type: string
-          format: date-time
-        renewalDate:
-          type: string
-          format: date-time
-        status:
-          type: string
-          enum: [active, overdue, returned, lost]
-        renewalsUsed:
+            $ref: '#/components/schemas/Member'
+        totalElements:
           type: integer
           minimum: 0
-          default: 0
-        maxRenewals:
+          examples:
+            - 1500
+        page:
           type: integer
           minimum: 0
-          default: 2
-        condition:
-          type: string
-          enum: [excellent, good, fair, damaged, lost]
-        notes:
-          type: string
-
-    Reservation:
-      type: object
-      required:
-        - id
-        - bookId
-        - memberId
-        - reservationDate
-        - status
-      properties:
-        id:
-          type: string
-          description: Unique reservation identifier
-        bookId:
-          type: string
-        memberId:
-          type: string
-        title:
-          type: string
-          description: Book title for convenience
-        reservationDate:
-          type: string
-          format: date-time
-        status:
-          type: string
-          enum: [active, fulfilled, cancelled, expired]
-        queuePosition:
+          examples:
+            - 0
+        size:
           type: integer
           minimum: 1
-        estimatedAvailableDate:
+          examples:
+            - 20
+
+    Book:
+      description: Physical book available for lending
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/BookToBeCreated'
+      required:
+        - bookId
+      properties:
+        bookId:
+          description: Unique identifier for the physical book
+          type: string
+          format: uuid
+          examples:
+            - 123e4567-e89b-12d3-a456-426614174000
+
+    BookToBeCreated:
+      description: Book information for inventory addition
+      type: object
+      required:
+        - title
+        - isbn
+        - catalogEntryId
+      properties:
+        title:
+          description: Title of the book
+          type: string
+          minLength: 1
+          maxLength: 500
+          examples:
+            - "Pride and Prejudice"
+        isbn:
+          description: International Standard Book Number
+          type: string
+          pattern: '^(978|979)-?\d{1,5}-?\d{1,7}-?\d{1,7}-?\d{1}$'
+          examples:
+            - "978-0-14-143951-8"
+        catalogEntryId:
+          description: Reference to catalog entry
+          type: string
+          format: uuid
+          examples:
+            - "550e8400-e29b-41d4-a716-446655440000"
+        condition:
+          description: Physical condition of the book
+          type: string
+          enum:
+            - NEW
+            - GOOD
+            - FAIR
+            - POOR
+          examples:
+            - GOOD
+        location:
+          description: Physical location in library (shelf/section)
+          type: string
+          maxLength: 100
+          examples:
+            - "Section A, Shelf 15"
+        status:
+          description: Current availability status
+          type: string
+          enum:
+            - AVAILABLE
+            - BORROWED
+            - RESERVED
+            - MAINTENANCE
+          examples:
+            - AVAILABLE
+
+    BookList:
+      description: List of books
+      type: object
+      required:
+        - books
+        - totalElements
+        - page
+        - size
+      properties:
+        books:
+          type: array
+          items:
+            $ref: '#/components/schemas/Book'
+        totalElements:
+          type: integer
+          minimum: 0
+          examples:
+            - 5000
+        page:
+          type: integer
+          minimum: 0
+          examples:
+            - 0
+        size:
+          type: integer
+          minimum: 1
+          examples:
+            - 20
+
+    Loan:
+      description: Book loan information
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/LoanToBeCreated'
+      required:
+        - loanId
+        - loanDate
+      properties:
+        loanId:
+          description: Unique identifier for the loan
+          type: string
+          format: uuid
+          examples:
+            - 550e8400-e29b-41d4-a716-446655440000
+        loanDate:
+          description: Date when the book was borrowed
           type: string
           format: date
-        notificationDate:
+          examples:
+            - "2024-07-01"
+        returnDate:
+          description: Date when the book was returned (null if still borrowed)
           type: string
-          format: date-time
-          description: When member was notified book is available
-        expiryDate:
-          type: string
-          format: date-time
-          description: When reservation expires if not fulfilled
-        priority:
-          type: string
-          enum: [normal, urgent]
-        notes:
-          type: string
+          format: date
+          nullable: true
+          examples:
+            - "2024-07-15"
 
-    Fine:
+    LoanToBeCreated:
+      description: Loan information for creation
       type: object
       required:
-        - id
-        - type
-        - amount
-        - status
-      properties:
-        id:
-          type: string
-        type:
-          type: string
-          enum: [overdue, damage, lost_book, processing]
-        amount:
-          type: number
-          format: decimal
-          minimum: 0
-        currency:
-          type: string
-          default: USD
-        status:
-          type: string
-          enum: [pending, paid, waived, disputed]
-        description:
-          type: string
-        accrualDate:
-          type: string
-          format: date-time
-        dueDate:
-          type: string
-          format: date-time
-        paidDate:
-          type: string
-          format: date-time
-
-    Transaction:
-      type: object
-      required:
-        - id
         - memberId
-        - type
-        - date
+        - bookId
+        - dueDate
       properties:
-        id:
-          type: string
         memberId:
+          description: ID of the member borrowing the book
           type: string
+          format: uuid
+          examples:
+            - "a07d62e1-5e2e-4e15-b50d-6ed412175443"
         bookId:
+          description: ID of the book being borrowed
           type: string
-        type:
+          format: uuid
+          examples:
+            - "123e4567-e89b-12d3-a456-426614174000"
+        dueDate:
+          description: Date when the book should be returned
           type: string
-          enum: [borrow, return, renewal, reservation, fine, payment]
-        date:
+          format: date
+          examples:
+            - "2024-07-21"
+        status:
+          description: Current status of the loan
           type: string
-          format: date-time
-        description:
-          type: string
-        amount:
-          type: number
-          format: decimal
-        details:
-          type: object
-          description: Transaction-specific additional details
+          enum:
+            - ACTIVE
+            - RETURNED
+            - OVERDUE
+          examples:
+            - ACTIVE
 
-    BorrowingSummary:
-      type: object
-      properties:
-        totalActive:
-          type: integer
-          minimum: 0
-        totalOverdue:
-          type: integer
-          minimum: 0
-        totalReturned:
-          type: integer
-          minimum: 0
-        totalFines:
-          type: number
-          format: decimal
-          minimum: 0
-        averageBorrowingPeriod:
-          type: number
-          description: Average borrowing period in days
-
-    Pagination:
+    LoanList:
+      description: List of loans
       type: object
       required:
-        - limit
-        - offset
-        - total
-        - hasMore
+        - loans
+        - totalElements
+        - page
+        - size
       properties:
-        limit:
+        loans:
+          type: array
+          items:
+            $ref: '#/components/schemas/Loan'
+        totalElements:
+          type: integer
+          minimum: 0
+          examples:
+            - 750
+        page:
+          type: integer
+          minimum: 0
+          examples:
+            - 0
+        size:
           type: integer
           minimum: 1
-        offset:
-          type: integer
-          minimum: 0
-        total:
-          type: integer
-          minimum: 0
-        hasMore:
-          type: boolean
+          examples:
+            - 20
 
-    Error:
+    BookReturn:
+      description: Information for returning a book
       type: object
-      required:
-        - error
-        - message
       properties:
-        error:
+        returnDate:
+          description: Date of return (defaults to current date if not specified)
           type: string
-          description: Error type identifier
-        message:
+          format: date
+          examples:
+            - "2024-07-15"
+        condition:
+          description: Condition of the book upon return
           type: string
-          description: Human-readable error message
-        details:
-          type: object
-          description: Additional error details
-        timestamp:
+          enum:
+            - NEW
+            - GOOD
+            - FAIR
+            - POOR
+            - DAMAGED
+          examples:
+            - GOOD
+        notes:
+          description: Additional notes about the return
           type: string
-          format: date-time
+          maxLength: 500
+          examples:
+            - "Book returned in good condition"
+
+  securitySchemes:
+    openIdConnect:
+      type: openIdConnect
+      description: Security scheme for lending operations
+      openIdConnectUrl: "https://idp.library.example.com/configuration"
