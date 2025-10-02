@@ -1,0 +1,531 @@
+asyncapi: 3.0.0
+
+info:
+  title: Catalog Management
+  version: 1.0.0
+  description: |
+    Events produced and consumed by the Catalog Management service.
+    The service handles the following domain events:
+      - Catalog Entry Created (when a book is purchased and added to catalog)
+      - Catalog Entry Updated (when catalog information is modified)
+      - Catalog Search Performed (query event)
+      - Book Not Found In Catalog (notification trigger)
+    
+    This bounded context is responsible for maintaining the library's catalog
+    of books with their metadata including authors, titles, publishers, ISBN,
+    publication dates, abstracts, and tags.
+  contact:
+    name: Annegret Junker
+    url: https://online-library.org/sample
+    email: annegret.junker@online-library.org
+  x-api-id: a8f3d241-9c5e-4a1b-bc72-445abc29f176
+
+servers:
+  event-broker-library:
+    host: broker.online-library.org:8092
+    protocol: kafka
+    description: Event broker of the online library
+    security:
+      - $ref: '#/components/securitySchemes/user-password'
+    bindings:
+      kafka:
+        schemaRegistryUrl: 'https://online-library-schema-registry.com'
+        schemaRegistryVendor: 'confluent'
+        bindingVersion: '0.5.0'
+
+channels:
+  CatalogEntryCreatedChannel:
+    description: Channel for catalog entries created when books are purchased
+    address: catalog-entry-created
+    messages:
+      CatalogEntryCreatedEvent:
+        $ref: '#/components/messages/CatalogEntryCreated'
+    bindings:
+      kafka:
+        topic: 'catalog-entry-created-event-channel'
+        bindingVersion: '0.5.0'
+
+  CatalogEntryUpdatedChannel:
+    description: Channel for catalog entry updates (librarian updates catalog with book information)
+    address: catalog-entry-updated
+    messages:
+      CatalogEntryUpdatedEvent:
+        $ref: '#/components/messages/CatalogEntryUpdated'
+    bindings:
+      kafka:
+        topic: 'catalog-entry-updated-event-channel'
+        bindingVersion: '0.5.0'
+
+  BookPurchasedChannel:
+    description: Channel to receive book purchased events from Purchase context (external)
+    address: book-purchased
+    messages:
+      BookPurchasedEvent:
+        $ref: '#/components/messages/BookPurchasedReceive'
+    bindings:
+      kafka:
+        topic: 'book-purchased-event-channel'
+        bindingVersion: '0.5.0'
+    externalDocs:
+      description: This event originates from the Purchase bounded context
+      url: https://online-library.org/docs/purchase-context
+
+  CatalogSearchRequestedChannel:
+    description: Channel for catalog search requests from members and other services
+    address: catalog-search-requested
+    messages:
+      CatalogSearchRequestedEvent:
+        $ref: '#/components/messages/CatalogSearchRequested'
+    bindings:
+      kafka:
+        topic: 'catalog-search-requested-event-channel'
+        bindingVersion: '0.5.0'
+
+  BookNotFoundInCatalogChannel:
+    description: Channel for notifying when a book search yields no results
+    address: book-not-found-in-catalog
+    messages:
+      BookNotFoundEvent:
+        $ref: '#/components/messages/BookNotFoundInCatalog'
+    bindings:
+      kafka:
+        topic: 'book-not-found-in-catalog-event-channel'
+        bindingVersion: '0.5.0'
+    externalDocs:
+      description: This event is consumed by the Notification bounded context
+      url: https://online-library.org/docs/notification-context
+
+operations:
+  ReceiveBookPurchased:
+    action: receive
+    channel:
+      $ref: '#/channels/BookPurchasedChannel'
+    summary: Receive book purchased events to create catalog entries
+    description: |
+      The Catalog Management service subscribes to book purchased events
+      from the Purchase context and creates corresponding catalog entries.
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          enum:
+            - cg-catalog-management-book-purchased
+
+  SendCatalogEntryCreated:
+    action: send
+    channel:
+      $ref: '#/channels/CatalogEntryCreatedChannel'
+    summary: Publish catalog entry created events
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-catalog-entry-created-.*$
+
+  SendCatalogEntryUpdated:
+    action: send
+    channel:
+      $ref: '#/channels/CatalogEntryUpdatedChannel'
+    summary: Publish catalog entry updated events when librarian updates catalog information
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-catalog-entry-updated-.*$
+
+  ReceiveCatalogSearchRequested:
+    action: receive
+    channel:
+      $ref: '#/channels/CatalogSearchRequestedChannel'
+    summary: Receive catalog search requests from members via Lending context
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          enum:
+            - cg-catalog-management-search
+
+  SendBookNotFoundInCatalog:
+    action: send
+    channel:
+      $ref: '#/channels/BookNotFoundInCatalogChannel'
+    summary: Publish book not found events to trigger notifications
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-book-not-found-.*$
+
+components:
+  messages:
+    BookPurchasedReceive:
+      name: BookPurchasedReceive
+      title: Book Purchased Event (Received)
+      summary: Event received from Purchase context when a book is purchased
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/BookPurchasedPayload'
+
+    CatalogEntryCreated:
+      name: CatalogEntryCreated
+      title: Catalog Entry Created Event
+      summary: Event published when a new catalog entry is created
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryUpdated:
+      name: CatalogEntryUpdated
+      title: Catalog Entry Updated Event
+      summary: Event published when librarian updates catalog entry with book details
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogSearchRequested:
+      name: CatalogSearchRequested
+      title: Catalog Search Requested Event
+      summary: Event received when member searches for books in catalog
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/CatalogSearchQuery'
+
+    BookNotFoundInCatalog:
+      name: BookNotFoundInCatalog
+      title: Book Not Found In Catalog Event
+      summary: Event published when catalog search yields no results
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/BookNotFoundPayload'
+
+  schemas:
+    CatalogEntry:
+      description: |
+        Catalog entry aggregate representing a book in the library catalog.
+        This is the core aggregate of the Catalog Management bounded context.
+      type: object
+      required:
+        - catalogIdentifier
+        - isbn
+        - title
+        - authors
+        - publisher
+        - createdAt
+      properties:
+        catalogIdentifier:
+          description: Unique identifier for the catalog entry (Schlüssel/Identifier)
+          type: string
+          format: uuid
+          examples:
+            - 3f8a1c2d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
+        isbn:
+          description: ISBN (International Standard Book Number) - 13 characters
+          type: string
+          pattern: ^(?:ISBN(?:-13)?:?\ )?(?=[0-9]{13}$|(?=(?:[0-9]+[-\ ]){4})[-\ 0-9]{17}$)97[89][-\ ]?[0-9]{1,5}[-\ ]?[0-9]+[-\ ]?[0-9]+[-\ ]?[0-9]$
+          examples:
+            - '9780321146530'
+            - 'ISBN 978-0321-14653-0'
+        title:
+          $ref: '#/components/schemas/Title'
+        authors:
+          description: Authors who wrote the book (1..*)
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/Author'
+        publisher:
+          $ref: '#/components/schemas/Publisher'
+        publishedOn:
+          description: Publication date of the book (Veröffentlicht am)
+          type: string
+          format: date
+          examples:
+            - '2002-11-08'
+        abstract:
+          $ref: '#/components/schemas/Abstract'
+        tags:
+          description: Keywords/tags for categorizing the book (Stichwort) - 0..*
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        createdAt:
+          description: Timestamp when catalog entry was created (Erzeugt um)
+          type: string
+          format: date-time
+          examples:
+            - '2025-10-02T10:30:00Z'
+        updatedAt:
+          description: Timestamp when catalog entry was last updated (Geändert um)
+          type: string
+          format: date-time
+          examples:
+            - '2025-10-02T14:45:00Z'
+
+    Author:
+      description: Author entity - person who writes the book (Autor)
+      type: object
+      required:
+        - authorId
+        - givenName
+        - familyName
+      properties:
+        authorId:
+          description: Unique identifier of the author
+          type: string
+          format: uuid
+          examples:
+            - 08a13654-05f3-4664-8c8d-fdd9114ec3be
+        givenName:
+          description: Given name of the author
+          type: string
+          minLength: 2
+          maxLength: 55
+          examples:
+            - Kent
+        familyName:
+          description: Family name of the author
+          type: string
+          minLength: 2
+          maxLength: 55
+          examples:
+            - Beck
+
+    Title:
+      description: Title value object - the title of the book (Titel)
+      type: object
+      required:
+        - mainTitle
+      properties:
+        mainTitle:
+          description: Main title of the book
+          type: string
+          minLength: 2
+          maxLength: 255
+          examples:
+            - Test-Driven Development
+        subtitle:
+          description: Subtitle of the book (optional)
+          type: string
+          minLength: 2
+          maxLength: 255
+          examples:
+            - By Example
+
+    Publisher:
+      description: Publisher value object - publishing house (Verlag)
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          description: Name of the publisher
+          type: string
+          minLength: 2
+          maxLength: 100
+          examples:
+            - Springer Nature
+            - Addison-Wesley
+        city:
+          description: Location/city of the publisher
+          type: string
+          minLength: 2
+          maxLength: 55
+          examples:
+            - Cham, Switzerland
+            - Boston
+
+    Abstract:
+      description: Abstract value object - brief summary of the book content (Kurzfassung)
+      type: object
+      properties:
+        text:
+          description: Abstract text describing the book content
+          type: string
+          minLength: 10
+          maxLength: 2000
+          examples:
+            - 'This book introduces test-driven development practices for professional programmers.'
+
+    Tag:
+      description: Tag value object - keyword for categorizing books (Stichwort)
+      type: object
+      required:
+        - keyword
+      properties:
+        keyword:
+          description: Keyword or tag for categorization
+          type: string
+          minLength: 2
+          maxLength: 50
+          examples:
+            - Software Engineering
+            - Testing
+            - Agile Development
+
+    BookPurchasedPayload:
+      description: Payload from book purchased event (external - from Purchase context)
+      type: object
+      required:
+        - isbn13
+      properties:
+        bookIdentifier:
+          description: Identifier from purchase context
+          type: string
+          format: uuid
+          examples:
+            - 5dda405a-d28e-490a-8508-1ea3453e91ae
+        isbn13:
+          description: ISBN-13 of purchased book
+          type: string
+          pattern: ^(?:ISBN(?:-13)?:?\ )?(?=[0-9]{13}$|(?=(?:[0-9]+[-\ ]){4})[-\ 0-9]{17}$)97[89][-\ ]?[0-9]{1,5}[-\ ]?[0-9]+[-\ ]?[0-9]+[-\ ]?[0-9]$
+          examples:
+            - '9780321146530'
+        authors:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Author'
+        title:
+          description: Title of purchased book
+          type: string
+          minLength: 2
+          maxLength: 255
+          examples:
+            - Test-Driven Development
+        subtitle:
+          type: string
+          minLength: 2
+          maxLength: 255
+        editor:
+          description: Publisher information from purchase
+          type: object
+          properties:
+            name:
+              type: string
+            city:
+              type: string
+
+    CatalogSearchQuery:
+      description: Search query for finding books in catalog
+      type: object
+      properties:
+        searchTerm:
+          description: General search term to match against title, author, or ISBN
+          type: string
+          minLength: 1
+          maxLength: 255
+          examples:
+            - Test-Driven Development
+        isbn:
+          description: Search by specific ISBN
+          type: string
+          pattern: ^(?:ISBN(?:-13)?:?\ )?(?=[0-9]{13}$|(?=(?:[0-9]+[-\ ]){4})[-\ 0-9]{17}$)97[89][-\ ]?[0-9]{1,5}[-\ ]?[0-9]+[-\ ]?[0-9]+[-\ ]?[0-9]$
+        authorName:
+          description: Search by author name
+          type: string
+          minLength: 2
+          maxLength: 110
+        tags:
+          description: Search by tags/keywords
+          type: array
+          items:
+            type: string
+        requesterId:
+          description: ID of the member requesting the search
+          type: string
+          format: uuid
+          examples:
+            - f7a9c5d1-2b3e-4f5a-8c9d-0e1f2a3b4c5d
+
+    BookNotFoundPayload:
+      description: Payload when book search yields no results (triggers notification)
+      type: object
+      required:
+        - searchQuery
+        - requesterId
+      properties:
+        searchQuery:
+          $ref: '#/components/schemas/CatalogSearchQuery'
+        requesterId:
+          description: Member ID to notify about missing book
+          type: string
+          format: uuid
+          examples:
+            - f7a9c5d1-2b3e-4f5a-8c9d-0e1f2a3b4c5d
+        searchedAt:
+          description: Timestamp when search was performed
+          type: string
+          format: date-time
+          examples:
+            - '2025-10-02T15:20:00Z'
+
+    MessageHeader:
+      description: Standard header information for each message
+      type: object
+      required:
+        - correlationId
+        - messageId
+        - x-api-identifier
+        - x-api-version
+      properties:
+        correlationId:
+          description: Identifier to trace end-to-end API journey
+          type: string
+          format: uuid
+          examples:
+            - b3416449-5f69-4cd2-a6c4-1ff82da96bce
+        messageId:
+          description: Unique identifier for the particular message
+          type: string
+          format: uuid
+          examples:
+            - 5a1d305b-19f3-46eb-ada1-9a9770e56fd1
+        x-api-identifier:
+          description: Identifier of the API creating the message
+          type: string
+          format: uuid
+          default: a8f3d241-9c5e-4a1b-bc72-445abc29f176
+          examples:
+            - a8f3d241-9c5e-4a1b-bc72-445abc29f176
+        x-api-version:
+          description: Version of the API
+          type: string
+          x-extensible-enum:
+            - 1.0.0
+          default: 1.0.0
+          examples:
+            - 1.0.0
+        source:
+          description: Application name creating the message
+          type: string
+          minLength: 2
+          maxLength: 20
+          examples:
+            - CatalogManagement
+        timestamp:
+          description: When the message was created
+          type: string
+          format: date-time
+          examples:
+            - '2025-10-02T12:00:00Z'
+
+  securitySchemes:
+    user-password:
+      type: userPassword
+      description: Security scheme for event broker authentication
