@@ -3,23 +3,23 @@ info:
   title: Catalog Management
   version: 1.0.0
   description: |
-    Events produced by the Catalog Management service.
-    The service manages the library catalog and produces the following domain events:
+    Events produced by catalog management service.
+    The service produces the following domain events:
       - Catalog Entry Created
       - Catalog Entry Updated
     
-    This bounded context is responsible for maintaining the library's catalog of books,
-    including bibliographic information, author details, publisher information, and ISBN management.
-    It receives book purchase events from the Purchase context and publishes catalog updates
-    to downstream contexts (Audio Summary, Lending, Catalog Search, Notification).
+    This bounded context manages the library catalog containing book metadata,
+    authors, publishers, titles, ISBNs, abstracts, and tags. It receives events
+    from the Purchase context and produces events consumed by Audio Summary,
+    Catalog Search, Lending, Notification, and Bookshelf contexts.
   contact:
     name: Annegret Junker
     url: https://online-library.org/sample
     email: annegret.junker@online-library.org
-  x-api-id: a8f23c7d-4e91-4b2a-9c3f-8d5e1f9a2b4c
   externalDocs:
-    description: Integration with Purchase context for book purchased events
-    url: https://online-library.org/api/purchase
+    description: Related contexts in the library system
+    url: https://online-library.org/docs/bounded-contexts
+  x-api-id: a8f5c2d1-3e7b-4a9c-b2f1-8d4e6c9a1b3f
 
 servers:
   event-broker-library:
@@ -36,7 +36,7 @@ servers:
 
 channels:
   CatalogEntryCreatedChannel:
-    description: Channel where messages are stored when a catalog entry is created
+    description: Channel where messages are stored when a catalog entry was created
     address: catalog-entry-created
     messages:
       CatalogEntryCreatedEvent:
@@ -47,7 +47,7 @@ channels:
         bindingVersion: '0.5.0'
 
   CatalogEntryUpdatedChannel:
-    description: Channel where messages are stored when a catalog entry is updated
+    description: Channel where messages are stored when a catalog entry was updated
     address: catalog-entry-updated
     messages:
       CatalogEntryUpdatedEvent:
@@ -59,8 +59,8 @@ channels:
 
   BookPurchasedChannel:
     description: |
-      Channel for receiving book purchased events from the Purchase context.
-      External event consumed by Catalog Management to create new catalog entries.
+      Channel for receiving book purchased events from Purchase context.
+      External event consumed by Catalog Management to trigger catalog entry creation.
     address: book-purchased
     messages:
       BookPurchasedEvent:
@@ -69,19 +69,19 @@ channels:
       kafka:
         topic: 'book-purchased-event-channel'
         bindingVersion: '0.5.0'
-    externalDocs:
-      description: Book Purchased event is owned by the Purchase context
-      url: https://online-library.org/api/purchase#BookPurchased
 
 operations:
   CatalogEntryCreatedSendOperation:
     action: send
     channel:
       $ref: '#/channels/CatalogEntryCreatedChannel'
-    summary: Send catalog entry created event
     description: |
-      Published when a new catalog entry is created by a librarian.
-      Consumed by: Audio Summary, Lending, Catalog Search, Notification contexts.
+      Publishes catalog entry created event. Consumed by:
+      - Audio Summary (to create index and audio summary)
+      - Catalog Search (to index catalog entry)
+      - Lending (to enable book lending)
+      - Notification (to notify about new catalog entries)
+      - Bookshelf (to enable book shelf arrangement)
     bindings:
       kafka:
         bindingVersion: '0.5.0'
@@ -93,10 +93,13 @@ operations:
     action: send
     channel:
       $ref: '#/channels/CatalogEntryUpdatedChannel'
-    summary: Send catalog entry updated event
     description: |
-      Published when an existing catalog entry is modified by a librarian.
-      Consumed by: Audio Summary, Lending, Catalog Search, Notification contexts.
+      Publishes catalog entry updated event. Consumed by:
+      - Audio Summary (to update index)
+      - Catalog Search (to reindex catalog entry)
+      - Lending (to update lending information)
+      - Notification (to notify about catalog updates)
+      - Bookshelf (to update book shelf data)
     bindings:
       kafka:
         bindingVersion: '0.5.0'
@@ -108,10 +111,9 @@ operations:
     action: receive
     channel:
       $ref: '#/channels/BookPurchasedChannel'
-    summary: Receive book purchased event
     description: |
-      Consumed from the Purchase context to trigger catalog entry creation.
-      After receiving this event, the Catalog Management service creates a new catalog entry.
+      Receives book purchased events from Purchase context to create catalog entries.
+      This operation triggers the catalog entry creation workflow performed by Librarian actor.
     bindings:
       kafka:
         bindingVersion: '0.5.0'
@@ -125,7 +127,7 @@ components:
     CatalogEntryCreatedSend:
       name: CatalogEntryCreated
       title: Catalog Entry Created Event
-      summary: Event published when a new catalog entry is created
+      summary: Event published when a new catalog entry is created by a librarian
       headers:
         $ref: '#/components/schemas/MessageHeader'
       payload:
@@ -134,7 +136,7 @@ components:
     CatalogEntryUpdatedSend:
       name: CatalogEntryUpdated
       title: Catalog Entry Updated Event
-      summary: Event published when a catalog entry is modified
+      summary: Event published when an existing catalog entry is updated by a librarian
       headers:
         $ref: '#/components/schemas/MessageHeader'
       payload:
@@ -143,10 +145,8 @@ components:
     BookPurchasedReceive:
       name: BookPurchased
       title: Book Purchased Event
-      summary: External event received from Purchase context
-      description: |
-        This event is owned by the Purchase bounded context.
-        Catalog Management subscribes to this event to create new catalog entries.
+      summary: Event received from Purchase context when a book is purchased
+      contentType: application/json
       headers:
         $ref: '#/components/schemas/MessageHeader'
       payload:
@@ -155,69 +155,109 @@ components:
   schemas:
     CatalogEntry:
       description: |
-        Aggregate root representing a catalog entry (Katalogeintrag) in the library system.
-        Contains complete bibliographic information including authors, title, publisher, ISBN, and metadata.
+        Catalog entry aggregate containing complete book metadata.
+        This is the core domain object managed by the Catalog Management context.
+        Maps to "Katalogeintrag" in the domain model.
       type: object
       required:
-        - identifier
+        - catalogIdentifier
         - isbn
         - title
         - authors
+        - publisher
         - createdAt
       properties:
-        identifier:
+        catalogIdentifier:
           description: Unique identifier of the catalog entry (Schlüssel Identifier)
           type: string
           format: uuid
           examples:
-            - 7c9e6b2f-4a1d-4e8b-9f3c-2d5e8a7b1c4f
+            - f3d8b9c1-4e2a-4b7d-9c1f-8e3a5b6d7c8e
         isbn:
-          $ref: '#/components/schemas/ISBN'
+          description: ISBN (international standard book number) with 13 characters
+          type: string
+          pattern: ^(?:ISBN(?:-13)?:?\ )?(?=[0-9]{13}$|(?=(?:[0-9]+[-\ ]){4})[-\ 0-9]{17}$)97[89][-\ ]?[0-9]{1,5}[-\ ]?[0-9]+[-\ ]?[0-9]+[-\ ]?[0-9]$
+          examples:
+            - 9780321146530
+            - ISBN 978-0321-14653-0
         title:
-          $ref: '#/components/schemas/Title'
+          description: Title of the book (Titel)
+          type: string
+          minLength: 2
+          maxLength: 255
+          examples:
+            - Test-Driven Development
+            - Domain-Driven Design
+        subtitle:
+          description: Subtitle of the book
+          type: string
+          minLength: 2
+          maxLength: 255
+          examples:
+            - By Example
+            - Tackling Complexity in the Heart of Software
         authors:
-          description: Authors who wrote the book (Autor - 1..*)
+          description: List of authors who wrote the book (Autor - 1..* relationship)
           type: array
           minItems: 1
-          maxItems: 20
+          maxItems: 10
           items:
             $ref: '#/components/schemas/Author'
+        areEditors:
+          description: Flag indicating if the book is published by editors rather than individual authors
+          type: boolean
+          default: false
+          examples:
+            - true
+            - false
         publisher:
+          description: Publisher of the book (Verlag)
           $ref: '#/components/schemas/Publisher'
         publishedOn:
-          description: Publication date of the book (Veröffentlicht am)
+          description: Publication date (Veröffentlicht am)
           type: string
           format: date
           examples:
-            - '2023-05-15'
+            - 2003-11-08
+            - 2004-08-30
         abstract:
-          description: Short summary or abstract of the book content (Kurzfassung - 0..1)
+          description: Abstract or summary of the book content (Kurzfassung - 0..1 relationship)
           type: string
           minLength: 10
           maxLength: 2000
           examples:
-            - This book provides a comprehensive introduction to test-driven development practices.
+            - This book follows two TDD projects from start to finish, illustrating techniques programmers can use to increase the quality of their work.
         tags:
-          description: Keywords or tags for categorization (Stichwort - 0..*)
+          description: Keywords or tags for categorization (Stichwort - 0..* relationship)
           type: array
-          maxItems: 50
+          minItems: 0
+          maxItems: 20
           items:
-            $ref: '#/components/schemas/Tag'
+            type: string
+            minLength: 2
+            maxLength: 50
+          examples:
+            - software-engineering
+            - testing
+            - agile
+            - design-patterns
         createdAt:
           description: Timestamp when the catalog entry was created (Erzeugt um)
           type: string
           format: date-time
           examples:
-            - '2024-09-15T14:30:00Z'
+            - 2025-10-02T10:30:00Z
         updatedAt:
           description: Timestamp when the catalog entry was last updated (Geändert um)
           type: string
           format: date-time
           examples:
-            - '2024-10-01T09:15:00Z'
+            - 2025-10-02T14:45:00Z
 
     Author:
-      description: Author entity (Autor) who wrote the book
+      description: |
+        Author entity representing a book author (Autor).
+        Authors write books (schreibt relationship 1..* in domain model).
       type: object
       required:
         - authorId
@@ -225,127 +265,70 @@ components:
         - familyName
       properties:
         authorId:
-          description: Unique identifier of the author
+          description: Identifier of the author
           type: string
           format: uuid
           examples:
-            - 3f8a9c2d-1e4b-4a7c-9d2e-5b6c8a9d1f3e
+            - 08a13654-05f3-4664-8c8d-fdd9114ec3be
+            - a7b9c2d3-1e4f-5a6b-8c9d-0e1f2a3b4c5d
         givenName:
-          description: Given name (first name) of the author
+          description: Given name of the author
           type: string
           minLength: 2
           maxLength: 55
           examples:
             - Kent
+            - Eric
             - Martin
         familyName:
-          description: Family name (last name) of the author
+          description: Family name of the author
           type: string
           minLength: 2
           maxLength: 55
           examples:
             - Beck
+            - Evans
             - Fowler
 
-    Title:
-      description: Title value object representing the book's title (Titel)
-      type: object
-      required:
-        - mainTitle
-      properties:
-        mainTitle:
-          description: Main title of the book
-          type: string
-          minLength: 1
-          maxLength: 255
-          examples:
-            - Test-Driven Development
-            - Domain-Driven Design
-        subtitle:
-          description: Subtitle providing additional context
-          type: string
-          minLength: 1
-          maxLength: 255
-          examples:
-            - By Example
-            - Tackling Complexity in the Heart of Software
-
     Publisher:
-      description: Publisher entity (Verlag) responsible for publishing the book
+      description: |
+        Publisher entity representing a book publisher (Verlag).
+        Each catalog entry has exactly one publisher (1 relationship in domain model).
       type: object
       required:
         - name
       properties:
-        publisherId:
-          description: Unique identifier of the publisher
-          type: string
-          format: uuid
-          examples:
-            - 6d4e9f2a-3c1b-4e7d-8a9f-2c5b7d9e1a3f
         name:
-          description: Name of the publishing company
+          description: Name of the publisher
           type: string
           minLength: 2
           maxLength: 100
           examples:
-            - Addison-Wesley
+            - Addison-Wesley Professional
             - Springer Nature
             - O'Reilly Media
         city:
-          description: City where the publisher is located
+          description: Location of the publisher headquarters
           type: string
           minLength: 2
-          maxLength: 100
+          maxLength: 55
           examples:
             - Boston
             - Cham, Switzerland
-            - New York
-
-    ISBN:
-      description: |
-        ISBN value object (ISBN) - International Standard Book Number.
-        Uniquely identifies the book in the global publishing system.
-      type: object
-      required:
-        - isbn13
-      properties:
-        isbn13:
-          description: ISBN-13 format (13 digits)
-          type: string
-          pattern: ^(?:ISBN(?:-13)?:?\ )?(?=[0-9]{13}$|(?=(?:[0-9]+[-\ ]){4})[-\ 0-9]{17}$)97[89][-\ ]?[0-9]{1,5}[-\ ]?[0-9]+[-\ ]?[0-9]+[-\ ]?[0-9]$
-          examples:
-            - '9780321146530'
-            - 'ISBN 978-0-321-14653-0'
-            - '9780134757599'
-
-    Tag:
-      description: Tag value object (Stichwort) for categorization and search
-      type: object
-      required:
-        - label
-      properties:
-        label:
-          description: The tag label or keyword
-          type: string
-          minLength: 2
-          maxLength: 50
-          examples:
-            - software-engineering
-            - testing
-            - agile
-            - architecture
+            - Sebastopol, California
 
     BookPurchased:
       description: |
-        External event payload from Purchase context.
-        Represents a book that was purchased and needs to be cataloged.
+        External event payload received from Purchase context.
+        This event triggers catalog entry creation workflow.
+        Reference: Purchase bounded context API
       type: object
       required:
         - bookIdentifier
         - isbn13
       properties:
         bookIdentifier:
-          description: Identifier of the purchased book
+          description: Identifier of purchased book from Purchase context
           type: string
           format: uuid
           examples:
@@ -355,7 +338,8 @@ components:
           type: string
           pattern: ^(?:ISBN(?:-13)?:?\ )?(?=[0-9]{13}$|(?=(?:[0-9]+[-\ ]){4})[-\ 0-9]{17}$)97[89][-\ ]?[0-9]{1,5}[-\ ]?[0-9]+[-\ ]?[0-9]+[-\ ]?[0-9]$
           examples:
-            - '9780321146530'
+            - 9780321146530
+            - ISBN 978-0321-14653-0
         authors:
           description: Authors of the purchased book
           type: array
@@ -363,10 +347,6 @@ components:
           maxItems: 10
           items:
             type: object
-            required:
-              - authorId
-              - givenName
-              - familyName
             properties:
               authorId:
                 type: string
@@ -375,31 +355,49 @@ components:
                 type: string
               familyName:
                 type: string
-        title:
-          description: Title of the purchased book
-          type: string
-          minLength: 2
-          maxLength: 255
-          examples:
-            - Test-Driven Development
-        subtitle:
-          description: Subtitle of the purchased book
-          type: string
-          minLength: 2
-          maxLength: 255
-          examples:
-            - By Example
+        areEditors:
+          description: Flag to set to true if the book is published by editors
+          type: boolean
+          default: false
         editor:
-          description: Editor/Publisher information
+          description: Editor information from purchase context
           type: object
           properties:
             name:
               type: string
             city:
               type: string
+        title:
+          description: Title of the purchased book
+          type: string
+          examples:
+            - Test-Driven Development
+        subtitle:
+          description: Subtitle of the purchased book
+          type: string
+          examples:
+            - By Example
+        media:
+          description: Link to the media which contains the book
+          type: string
+          format: url
+          examples:
+            - 'https://online-library/storage/2024/test-driven-development.epub'
+        format:
+          description: Format of the according media
+          type: string
+          x-extensible-enum:
+            - EPUB
+            - KINDLE
+            - PDF
+            - BBEB
+            - MOBI
+          default: EPUB
+          examples:
+            - EPUB
 
     MessageHeader:
-      description: Standard header information for each message
+      description: Header information for each message
       type: object
       required:
         - correlationId
@@ -408,24 +406,24 @@ components:
         - x-api-version
       properties:
         correlationId:
-          description: Identifier to trace end-to-end API journey across contexts
+          description: Identifier to be set by application to trace end-to-end-api-journey
           type: string
           format: uuid
           examples:
             - b3416449-5f69-4cd2-a6c4-1ff82da96bce
         messageId:
-          description: Unique identifier for this particular message instance
+          description: Identifier for the particular message, is needed in case of cascading infrastructure
           type: string
           format: uuid
           examples:
             - 5a1d305b-19f3-46eb-ada1-9a9770e56fd1
         x-api-identifier:
-          description: Identifier of the Catalog Management API
+          description: Identifier of the API used to create the message
           type: string
           format: uuid
-          default: a8f23c7d-4e91-4b2a-9c3f-8d5e1f9a2b4c
+          default: a8f5c2d1-3e7b-4a9c-b2f1-8d4e6c9a1b3f
           examples:
-            - a8f23c7d-4e91-4b2a-9c3f-8d5e1f9a2b4c
+            - a8f5c2d1-3e7b-4a9c-b2f1-8d4e6c9a1b3f
         x-api-version:
           description: Version of the API
           type: string
@@ -438,18 +436,12 @@ components:
           description: Application name creating the message
           type: string
           minLength: 2
-          maxLength: 30
+          maxLength: 20
           examples:
             - CatalogManagement
             - Purchase
-        timestamp:
-          description: Timestamp when the message was created
-          type: string
-          format: date-time
-          examples:
-            - '2024-10-02T10:30:00Z'
 
   securitySchemes:
     user-password:
       type: userPassword
-      description: Security scheme for event broker authentication
+      description: Security scheme for events
