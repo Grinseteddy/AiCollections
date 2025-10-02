@@ -3,13 +3,19 @@ info:
   title: Catalog Management API
   description: |
     API for managing library catalog entries including books, authors, titles, publishers, and ISBN information.
-    This bounded context handles catalog operations for the library system.
+    This API supports catalog entry creation, updates, search operations, and metadata management.
   version: 1.0.0
-  x-api-id: 2a4f6c8d-1b3e-4f92-bc67-9d5e3a7f2c1b
+  x-api-id: c7b2f4a1-9d3e-4c28-b851-7f3a9c2d5e18
   x-audience: external-public
+  contact:
+    name: Catalog Management Team
+    email: catalog-support@library.com
 
 servers:
   - url: 'https://api.library.com/catalog/v1'
+    description: Production server
+  - url: 'https://api.library-staging.com/catalog/v1'
+    description: Staging server
 
 security:
   - openIdConnect:
@@ -19,13 +25,13 @@ security:
 
 tags:
   - name: Catalog Entries
-    description: Operations for managing catalog entries
+    description: Operations for managing catalog entries (Katalogeintrag)
   - name: Authors
-    description: Author information management
-  - name: Publishers
-    description: Publisher information management
+    description: Operations for managing authors (Autor)
   - name: Search
     description: Catalog search operations
+  - name: Metadata
+    description: Book metadata operations
 
 paths:
   /catalog-entries:
@@ -39,10 +45,12 @@ paths:
             - catalog:read
       parameters:
         - $ref: '#/components/parameters/AuthorParameter'
-        - $ref: '#/components/parameters/PublisherParameter'
         - $ref: '#/components/parameters/TitleParameter'
+        - $ref: '#/components/parameters/PublisherParameter'
         - $ref: '#/components/parameters/ISBNParameter'
         - $ref: '#/components/parameters/TagParameter'
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/PageSizeParameter'
         - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
@@ -58,13 +66,16 @@ paths:
       operationId: createCatalogEntry
       summary: Create a new catalog entry
       description: |
-        Creates a new catalog entry for a book. This is typically triggered when a librarian purchases a book.
-        The catalog entry is linked to the Purchase bounded context.
+        Creates a new catalog entry in the system. This operation is typically performed by librarians
+        after purchasing a new book. The entry includes bibliographic metadata such as author, title,
+        publisher, ISBN, and publication date.
       tags:
         - Catalog Entries
       security:
         - openIdConnect:
             - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
         $ref: '#/components/requestBodies/CatalogEntryCreateRequest'
       responses:
@@ -74,11 +85,10 @@ paths:
           $ref: '#/components/responses/BadRequestResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
+        '409':
+          $ref: '#/components/responses/ConflictResponse'
         '500':
           $ref: '#/components/responses/ServiceNotAvailableResponse'
-      externalDocs:
-        description: Purchase context integration
-        url: 'https://api.library.com/purchase/v1'
 
   /catalog-entries/{catalogEntryId}:
     get:
@@ -97,6 +107,8 @@ paths:
           $ref: '#/components/responses/CatalogEntryResponse'
         '404':
           $ref: '#/components/responses/NotFoundResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
         '500':
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
@@ -104,8 +116,8 @@ paths:
       operationId: updateCatalogEntry
       summary: Update an existing catalog entry
       description: |
-        Updates catalog entry information including title, author, publisher, ISBN, published date, abstract, and tags.
-        This operation is typically performed by librarians to maintain accurate catalog information.
+        Updates catalog entry metadata. This operation is performed by librarians to correct or
+        enhance bibliographic information. Updates the "updatedAt" timestamp automatically.
       tags:
         - Catalog Entries
       security:
@@ -123,12 +135,17 @@ paths:
           $ref: '#/components/responses/BadRequestResponse'
         '404':
           $ref: '#/components/responses/NotFoundResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
         '500':
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
     delete:
       operationId: deleteCatalogEntry
       summary: Delete a catalog entry
+      description: |
+        Removes a catalog entry from the system. This operation should be used with caution.
+        Note: This does not delete physical book copies, only the catalog metadata.
       tags:
         - Catalog Entries
       security:
@@ -142,16 +159,19 @@ paths:
           description: Catalog entry deleted successfully
         '404':
           $ref: '#/components/responses/NotFoundResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
         '500':
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
   /catalog-entries/search:
     post:
       operationId: searchCatalogEntries
-      summary: Search catalog entries
+      summary: Advanced catalog search
       description: |
-        Advanced search functionality for catalog entries. Supports full-text search across titles, authors, 
-        abstracts, and tags. Used by both members (Lending context) and librarians (Catalog Search process).
+        Performs advanced search across catalog entries using multiple criteria.
+        Supports full-text search on title, author, publisher, and tags.
+        This endpoint is used by both members (catalog search scenario) and librarians.
       tags:
         - Search
       security:
@@ -166,65 +186,129 @@ paths:
           $ref: '#/components/responses/CatalogSearchResponse'
         '400':
           $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
         '500':
           $ref: '#/components/responses/ServiceNotAvailableResponse'
-      externalDocs:
-        description: Lending context integration
-        url: 'https://api.library.com/lending/v1'
 
-  /catalog-entries/{catalogEntryId}/availability:
+  /catalog-entries/isbn/{isbn}:
     get:
-      operationId: getCatalogEntryAvailability
-      summary: Check availability of a catalog entry
+      operationId: getCatalogEntryByISBN
+      summary: Retrieve catalog entry by ISBN
       description: |
-        Returns availability information for a catalog entry, including whether copies are available for lending.
-        This endpoint integrates with the Lending bounded context.
+        Looks up a catalog entry using its ISBN. Returns the catalog entry if found.
+        Useful for quick lookups and integrations with external systems.
       tags:
         - Catalog Entries
       security:
         - openIdConnect:
             - catalog:read
       parameters:
-        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+        - name: isbn
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$'
+          description: ISBN-10 or ISBN-13 identifier
         - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Availability information
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CatalogEntryAvailability'
+          $ref: '#/components/responses/CatalogEntryResponse'
         '404':
           $ref: '#/components/responses/NotFoundResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
         '500':
           $ref: '#/components/responses/ServiceNotAvailableResponse'
-      externalDocs:
-        description: Lending context for borrowing status
-        url: 'https://api.library.com/lending/v1'
 
   /authors:
     get:
       operationId: getAuthors
-      summary: Retrieve all authors
+      summary: Retrieve list of authors
+      description: Retrieves authors available in the catalog system
       tags:
         - Authors
       security:
         - openIdConnect:
             - catalog:read
       parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Filter by author name (partial match)
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/PageSizeParameter'
         - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
           $ref: '#/components/responses/AuthorListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /authors/{authorId}:
+    get:
+      operationId: getAuthorById
+      summary: Retrieve a specific author
+      tags:
+        - Authors
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/AuthorIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
         '500':
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
   /publishers:
     get:
       operationId: getPublishers
-      summary: Retrieve all publishers
+      summary: Retrieve list of publishers
+      description: Retrieves publishers available in the catalog system
       tags:
-        - Publishers
+        - Metadata
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Filter by publisher name (partial match)
+        - $ref: '#/components/parameters/PageParameter'
+        - $ref: '#/components/parameters/PageSizeParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/PublisherListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /tags:
+    get:
+      operationId: getTags
+      summary: Retrieve available catalog tags
+      description: |
+        Retrieves all tags (keywords/Stichwort) used for categorizing catalog entries.
+        Tags are used for improved searchability and classification.
+      tags:
+        - Metadata
       security:
         - openIdConnect:
             - catalog:read
@@ -232,7 +316,9 @@ paths:
         - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          $ref: '#/components/responses/PublisherListResponse'
+          $ref: '#/components/responses/TagListResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
         '500':
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
@@ -241,8 +327,17 @@ components:
     CatalogEntryIdParameter:
       name: catalogEntryId
       in: path
-      description: Unique identifier for a catalog entry (Schlüssel/Identifier)
       required: true
+      description: Unique identifier for the catalog entry (Schlüssel/Identifier)
+      schema:
+        type: string
+        format: uuid
+
+    AuthorIdParameter:
+      name: authorId
+      in: path
+      required: true
+      description: Unique identifier for the author
       schema:
         type: string
         format: uuid
@@ -253,15 +348,6 @@ components:
       description: Filter by author name
       schema:
         type: string
-        maxLength: 200
-
-    PublisherParameter:
-      name: publisher
-      in: query
-      description: Filter by publisher name (Verlag)
-      schema:
-        type: string
-        maxLength: 200
 
     TitleParameter:
       name: title
@@ -269,7 +355,13 @@ components:
       description: Filter by title (Titel)
       schema:
         type: string
-        maxLength: 500
+
+    PublisherParameter:
+      name: publisher
+      in: query
+      description: Filter by publisher (Verlag)
+      schema:
+        type: string
 
     ISBNParameter:
       name: isbn
@@ -277,20 +369,38 @@ components:
       description: Filter by ISBN
       schema:
         type: string
-        pattern: '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$'
 
     TagParameter:
       name: tag
       in: query
-      description: Filter by tag (Stichwort)
+      description: Filter by tag/keyword (Stichwort)
       schema:
         type: string
-        maxLength: 100
+
+    PageParameter:
+      name: page
+      in: query
+      description: Page number for pagination (starts at 0)
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    PageSizeParameter:
+      name: pageSize
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
 
     VersionParameter:
       name: x-version
       in: header
       required: true
+      description: API version header
       schema:
         type: string
         default: "1.0.0"
@@ -299,7 +409,9 @@ components:
   schemas:
     CatalogEntry:
       type: object
-      description: Catalog entry (Katalogeintrag) representing a book in the library catalog
+      description: |
+        A catalog entry (Katalogeintrag) represents the bibliographic metadata for a book in the library catalog.
+        This is the core aggregate of the Catalog Management bounded context.
       required:
         - identifier
         - title
@@ -312,7 +424,8 @@ components:
         identifier:
           type: string
           format: uuid
-          description: Unique catalog entry identifier (Schlüssel/Identifier)
+          description: Unique identifier for the catalog entry (Schlüssel/Identifier)
+          readOnly: true
         title:
           type: string
           minLength: 1
@@ -322,11 +435,11 @@ components:
           type: string
           minLength: 1
           maxLength: 200
-          description: Author name (Autor)
+          description: Author name (Autor) - stored as string for simplicity
         isbn:
           type: string
           pattern: '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$'
-          description: International Standard Book Number
+          description: International Standard Book Number (ISBN)
         publisher:
           type: string
           minLength: 1
@@ -342,25 +455,36 @@ components:
           description: Book abstract or summary (Kurzfassung/Abstract)
         tags:
           type: array
+          description: Keywords or tags for categorization (Stichwort/Tag)
           items:
             type: string
-            maxLength: 100
-          description: Keywords/tags for categorization (Stichwort/Tag)
+            maxLength: 50
           maxItems: 20
         createdAt:
           type: string
           format: date-time
-          description: Timestamp when catalog entry was created (Erzeugt um/Created at)
+          description: Timestamp when the catalog entry was created (Erzeugt um/Created at)
           readOnly: true
         updatedAt:
           type: string
           format: date-time
-          description: Timestamp when catalog entry was last updated (Geändert um/Updated at)
+          description: Timestamp when the catalog entry was last updated (Geändert um/Updated at)
           readOnly: true
+      example:
+        identifier: "c7b2f4a1-9d3e-4c28-b851-7f3a9c2d5e18"
+        title: "Domain-Driven Design: Tackling Complexity in the Heart of Software"
+        author: "Eric Evans"
+        isbn: "978-0321125217"
+        publisher: "Addison-Wesley Professional"
+        publishedOn: "2003-08-20"
+        abstract: "A comprehensive guide to domain-driven design principles and practices."
+        tags: ["Software Architecture", "DDD", "Design Patterns"]
+        createdAt: "2025-01-15T10:30:00Z"
+        updatedAt: "2025-01-15T10:30:00Z"
 
     CatalogEntryCreate:
       type: object
-      description: Request body for creating a new catalog entry
+      description: Request payload for creating a new catalog entry
       required:
         - title
         - author
@@ -385,26 +509,26 @@ components:
           type: string
           minLength: 1
           maxLength: 200
-          description: Publisher name (Verlag/Publisher)
+          description: Publisher name (Verlag)
         publishedOn:
           type: string
           format: date
-          description: Publication date (Veröffentlicht am/Published on)
+          description: Publication date (Veröffentlicht am)
         abstract:
           type: string
           maxLength: 2000
-          description: Book abstract or summary (Kurzfassung/Abstract)
+          description: Book abstract (Kurzfassung)
         tags:
           type: array
+          description: Keywords or tags (Stichwort)
           items:
             type: string
-            maxLength: 100
-          description: Keywords/tags for categorization (Stichwort/Tag)
+            maxLength: 50
           maxItems: 20
 
     CatalogEntryUpdate:
       type: object
-      description: Request body for updating an existing catalog entry
+      description: Request payload for updating a catalog entry
       properties:
         title:
           type: string
@@ -424,117 +548,178 @@ components:
           type: string
           minLength: 1
           maxLength: 200
-          description: Publisher name (Verlag/Publisher)
+          description: Publisher name (Verlag)
         publishedOn:
           type: string
           format: date
-          description: Publication date (Veröffentlicht am/Published on)
+          description: Publication date (Veröffentlicht am)
         abstract:
           type: string
           maxLength: 2000
-          description: Book abstract or summary (Kurzfassung/Abstract)
+          description: Book abstract (Kurzfassung)
         tags:
           type: array
+          description: Keywords or tags (Stichwort)
           items:
             type: string
-            maxLength: 100
-          description: Keywords/tags for categorization (Stichwort/Tag)
+            maxLength: 50
           maxItems: 20
 
-    CatalogSearchRequest:
+    CatalogSearchCriteria:
       type: object
-      description: Search request for catalog entries
+      description: Advanced search criteria for catalog entries
       properties:
         query:
           type: string
-          description: Full-text search query across title, author, abstract, and tags
-          maxLength: 500
-        filters:
-          type: object
-          properties:
-            author:
-              type: string
-              maxLength: 200
-            publisher:
-              type: string
-              maxLength: 200
-            isbn:
-              type: string
-            publishedAfter:
-              type: string
-              format: date
-            publishedBefore:
-              type: string
-              format: date
-            tags:
-              type: array
-              items:
-                type: string
-        limit:
+          description: Full-text search query across title, author, publisher, and abstract
+          maxLength: 200
+        title:
+          type: string
+          description: Filter by title (partial match)
+        author:
+          type: string
+          description: Filter by author (partial match)
+        publisher:
+          type: string
+          description: Filter by publisher (partial match)
+        isbn:
+          type: string
+          description: Exact ISBN match
+        tags:
+          type: array
+          description: Filter by tags (any match)
+          items:
+            type: string
+        publishedAfter:
+          type: string
+          format: date
+          description: Filter by publication date (after or equal to)
+        publishedBefore:
+          type: string
+          format: date
+          description: Filter by publication date (before or equal to)
+        page:
+          type: integer
+          minimum: 0
+          default: 0
+        pageSize:
           type: integer
           minimum: 1
           maximum: 100
           default: 20
-        offset:
-          type: integer
-          minimum: 0
-          default: 0
 
     CatalogSearchResult:
       type: object
+      description: Search results with pagination metadata
+      required:
+        - entries
+        - totalCount
+        - page
+        - pageSize
       properties:
-        results:
+        entries:
           type: array
           items:
             $ref: '#/components/schemas/CatalogEntry'
-        total:
+        totalCount:
           type: integer
           description: Total number of matching entries
-        limit:
+        page:
           type: integer
-        offset:
+          description: Current page number
+        pageSize:
           type: integer
-
-    CatalogEntryAvailability:
-      type: object
-      description: Availability information for a catalog entry
-      properties:
-        catalogEntryId:
-          type: string
-          format: uuid
-        totalCopies:
+          description: Number of items per page
+        totalPages:
           type: integer
-          description: Total number of copies in the library
-        availableCopies:
-          type: integer
-          description: Number of copies currently available for lending
-        isAvailable:
-          type: boolean
-          description: Whether at least one copy is available
+          description: Total number of pages
 
     Author:
       type: object
-      description: Author entity (Autor/Author)
+      description: Author entity (Autor) - simplified representation
       required:
+        - id
         - name
       properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique author identifier
         name:
           type: string
           minLength: 1
           maxLength: 200
-          description: Author's full name
+          description: Full name of the author
+        biography:
+          type: string
+          maxLength: 1000
+          description: Author biography
+        bookCount:
+          type: integer
+          description: Number of books by this author in the catalog
+          readOnly: true
 
     Publisher:
       type: object
-      description: Publisher entity (Verlag/Publisher)
+      description: Publisher entity (Verlag)
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique publisher identifier
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Publisher name
+        country:
+          type: string
+          maxLength: 100
+          description: Publisher's country
+        website:
+          type: string
+          format: uri
+          description: Publisher's website URL
+
+    Tag:
+      type: object
+      description: Tag/Keyword entity (Stichwort)
       required:
         - name
       properties:
         name:
           type: string
           minLength: 1
-          maxLength: 200
-          description: Publisher's name
+          maxLength: 50
+          description: Tag name
+        usageCount:
+          type: integer
+          description: Number of catalog entries using this tag
+          readOnly: true
+
+    PaginatedResponse:
+      type: object
+      description: Generic pagination wrapper
+      required:
+        - totalCount
+        - page
+        - pageSize
+      properties:
+        totalCount:
+          type: integer
+          description: Total number of items
+        page:
+          type: integer
+          description: Current page number
+        pageSize:
+          type: integer
+          description: Items per page
+        totalPages:
+          type: integer
+          description: Total number of pages
 
     Error:
       type: object
@@ -544,10 +729,17 @@ components:
       properties:
         code:
           type: string
+          description: Error code for programmatic handling
         message:
           type: string
+          description: Human-readable error message
         details:
           type: object
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when the error occurred
 
   responses:
     CatalogEntryResponse:
@@ -558,13 +750,18 @@ components:
             $ref: '#/components/schemas/CatalogEntry'
 
     CatalogEntryListResponse:
-      description: List of catalog entries
+      description: List of catalog entries with pagination
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/CatalogEntry'
+            allOf:
+              - $ref: '#/components/schemas/PaginatedResponse'
+              - type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogEntry'
 
     CatalogEntryCreatedResponse:
       description: Catalog entry created successfully
@@ -580,36 +777,71 @@ components:
             $ref: '#/components/schemas/CatalogEntry'
 
     CatalogSearchResponse:
-      description: Search results for catalog entries
+      description: Catalog search results
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/CatalogSearchResult'
 
-    AuthorListResponse:
-      description: List of authors
+    AuthorResponse:
+      description: Single author response
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/Author'
+            $ref: '#/components/schemas/Author'
+
+    AuthorListResponse:
+      description: List of authors with pagination
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/PaginatedResponse'
+              - type: object
+                properties:
+                  authors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Author'
 
     PublisherListResponse:
-      description: List of publishers
+      description: List of publishers with pagination
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/Publisher'
+            allOf:
+              - $ref: '#/components/schemas/PaginatedResponse'
+              - type: object
+                properties:
+                  publishers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Publisher'
+
+    TagListResponse:
+      description: List of available tags
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              tags:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
 
     BadRequestResponse:
-      description: Invalid request
+      description: Invalid request - validation error or malformed input
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            code: "VALIDATION_ERROR"
+            message: "Invalid ISBN format provided"
+            details:
+              field: "isbn"
+              constraint: "pattern"
 
     NotFoundResponse:
       description: Resource not found
@@ -617,47 +849,109 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            code: "NOT_FOUND"
+            message: "Catalog entry not found"
 
     ForbiddenResponse:
-      description: Access forbidden
+      description: Access forbidden - insufficient permissions
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            code: "FORBIDDEN"
+            message: "Insufficient permissions to perform this operation"
+
+    ConflictResponse:
+      description: Conflict - resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "DUPLICATE_ISBN"
+            message: "A catalog entry with this ISBN already exists"
 
     ServiceNotAvailableResponse:
-      description: Service unavailable
+      description: Service temporarily unavailable
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            code: "SERVICE_UNAVAILABLE"
+            message: "The catalog service is temporarily unavailable"
 
   requestBodies:
     CatalogEntryCreateRequest:
-      description: Catalog entry creation request
+      description: Request body for creating a new catalog entry
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/CatalogEntryCreate'
+          example:
+            title: "Domain-Driven Design"
+            author: "Eric Evans"
+            isbn: "978-0321125217"
+            publisher: "Addison-Wesley"
+            publishedOn: "2003-08-20"
+            abstract: "A comprehensive guide to DDD"
+            tags: ["Software Architecture", "DDD"]
 
     CatalogEntryUpdateRequest:
-      description: Catalog entry update request
+      description: Request body for updating a catalog entry
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/CatalogEntryUpdate'
+          example:
+            abstract: "Updated abstract with more details"
+            tags: ["Software Architecture", "DDD", "Design Patterns"]
 
     CatalogSearchRequest:
-      description: Catalog search request
+      description: Request body for advanced catalog search
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/CatalogSearchRequest'
+            $ref: '#/components/schemas/CatalogSearchCriteria'
+          example:
+            query: "domain driven design"
+            tags: ["Software Architecture"]
+            publishedAfter: "2000-01-01"
+            page: 0
+            pageSize: 20
 
   securitySchemes:
     openIdConnect:
       type: openIdConnect
       openIdConnectUrl: https://auth.library.com/.well-known/openid-configuration
+      description: |
+        OpenID Connect authentication for the Catalog Management API.
+        Scopes:
+        - catalog:read - Read access to catalog entries
+        - catalog:write - Create and update catalog entries
+        - catalog:admin - Full administrative access including deletion
+
+  externalDocs:
+    description: |
+      External integrations and cross-context interactions:
+      
+      - **Lending Context**: The catalog does not manage physical book copies or lending operations.
+        Book availability and lending status are managed by the Lending bounded context.
+        Integration: Lending context queries catalog entries via catalogEntryId.
+      
+      - **Notification Context**: The catalog publishes events when entries are created or updated,
+        which may trigger notifications to librarians about missing books or catalog issues.
+        Integration: Event-driven via domain events (CatalogEntryCreated, CatalogEntryUpdated).
+      
+      - **Audio Summary Context**: AI-generated audio summaries reference catalog entries but are
+        managed in a separate context. Audio summaries are linked via catalogEntryId.
+        Integration: Audio Summary context reads catalog metadata via this API.
+      
+      - **Reading Context**: Member reading activities (bookmarks, notes, bookshelves) reference
+        catalog entries but are managed in the Reading bounded context.
+        Integration: Reading context uses catalogEntryId as a foreign key reference.
