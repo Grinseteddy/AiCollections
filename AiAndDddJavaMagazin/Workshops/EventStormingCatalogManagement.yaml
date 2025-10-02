@@ -2,19 +2,11 @@ openapi: 3.1.0
 info:
   title: Catalog Management API
   description: |
-    API for managing library catalog entries including books, authors, publishers, and metadata.
-    This API represents the Catalog Management bounded context responsible for maintaining
-    the authoritative catalog of library materials.
-    
-    **Related Contexts:**
-    - Purchase: Triggers catalog entry creation when new books are acquired
-    - Audio Summary: Consumes catalog data to generate audio summaries
-    - Catalog Search: Queries catalog entries for search functionality
-    - Notification: Receives updates when catalog entries change
-    - Lending: References catalog entries for lending operations
-    - Bookshelf: Uses catalog data for personal bookshelf organization
+    API for managing library catalog entries, including books, authors, publishers, and related metadata.
+    This API is part of the Catalog Management bounded context and handles the creation, retrieval, 
+    and updating of catalog entries.
   version: 1.0.0
-  x-api-id: 7e2b8c4f-9a3d-4f18-bc29-937d5fae2c81
+  x-api-id: 2a7f8c1d-4b6e-4f32-bc89-d74e9fa3b1c8
   x-audience: external-public
   contact:
     name: Catalog Management Team
@@ -23,7 +15,7 @@ info:
 servers:
   - url: 'https://api.library.com/catalog/v1'
     description: Production server
-  - url: 'https://staging-api.library.com/catalog/v1'
+  - url: 'https://api-staging.library.com/catalog/v1'
     description: Staging server
 
 security:
@@ -35,24 +27,21 @@ security:
 tags:
   - name: Catalog Entries
     description: Operations for managing catalog entries
-    externalDocs:
-      description: Catalog Entry Domain Model
-      url: https://docs.library.com/domains/catalog-entry
   - name: Authors
     description: Operations for managing authors
   - name: Publishers
     description: Operations for managing publishers
-  - name: Tags
-    description: Operations for managing catalog tags and keywords
+  - name: Search
+    description: Catalog search operations
+    externalDocs:
+      description: Links to Catalog Search bounded context
+      url: https://api.library.com/search/v1
 
 paths:
   /catalog-entries:
     get:
-      operationId: getCatalogEntriesByFilter
-      summary: Retrieve catalog entries with filters
-      description: |
-        Retrieve a list of catalog entries with optional filtering by author, publisher, ISBN, or tags.
-        Results are paginated and sorted by creation date by default.
+      operationId: getCatalogEntries
+      summary: Retrieve catalog entries with optional filtering
       tags:
         - Catalog Entries
       security:
@@ -80,10 +69,9 @@ paths:
       operationId: createCatalogEntry
       summary: Create a new catalog entry
       description: |
-        Create a new catalog entry for a book or library material.
-        Typically triggered when a new book is purchased.
-        
-        **Event Published:** CatalogEntryCreated
+        Creates a new catalog entry in the library catalog. This operation triggers
+        the "Catalog entry created" event which may be consumed by other bounded contexts
+        such as Catalog Search, Audio Summary, and Notification services.
       tags:
         - Catalog Entries
       security:
@@ -109,7 +97,6 @@ paths:
     get:
       operationId: getCatalogEntryById
       summary: Retrieve a specific catalog entry
-      description: Get detailed information about a catalog entry including all metadata
       tags:
         - Catalog Entries
       security:
@@ -128,11 +115,10 @@ paths:
 
     put:
       operationId: updateCatalogEntry
-      summary: Update a catalog entry
+      summary: Update an existing catalog entry
       description: |
-        Update catalog entry metadata including title, author, publisher, and other fields.
-        
-        **Event Published:** CatalogEntryUpdated
+        Updates an existing catalog entry. This operation triggers the "Catalog entry updated" 
+        event which may be consumed by Catalog Search and other dependent contexts.
       tags:
         - Catalog Entries
       security:
@@ -159,7 +145,8 @@ paths:
       operationId: deleteCatalogEntry
       summary: Delete a catalog entry
       description: |
-        Soft delete a catalog entry. Entry will be marked as deleted but retained for audit purposes.
+        Soft deletes a catalog entry from the catalog. Note that this may affect
+        related contexts such as Lending and Bookshelf if the entry is currently in use.
       tags:
         - Catalog Entries
       security:
@@ -170,7 +157,7 @@ paths:
         - $ref: '#/components/parameters/VersionParameter'
       responses:
         '204':
-          description: Catalog entry deleted successfully
+          description: Catalog entry successfully deleted
         '404':
           $ref: '#/components/responses/NotFoundResponse'
         '409':
@@ -179,30 +166,11 @@ paths:
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
   /catalog-entries/{catalogEntryId}/tags:
-    get:
-      operationId: getCatalogEntryTags
-      summary: Get tags for a catalog entry
-      tags:
-        - Catalog Entries
-        - Tags
-      security:
-        - openIdConnect:
-            - catalog:read
-      parameters:
-        - $ref: '#/components/parameters/CatalogEntryIdParameter'
-        - $ref: '#/components/parameters/VersionParameter'
-      responses:
-        '200':
-          $ref: '#/components/responses/TagListResponse'
-        '404':
-          $ref: '#/components/responses/NotFoundResponse'
-
     post:
       operationId: addTagToCatalogEntry
       summary: Add a tag to a catalog entry
       tags:
         - Catalog Entries
-        - Tags
       security:
         - openIdConnect:
             - catalog:write
@@ -212,49 +180,46 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/TagAddRequest'
       responses:
-        '201':
-          $ref: '#/components/responses/TagResponse'
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
         '400':
           $ref: '#/components/responses/BadRequestResponse'
         '404':
           $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
 
-  /catalog-entries/{catalogEntryId}/tags/{tagId}:
     delete:
       operationId: removeTagFromCatalogEntry
       summary: Remove a tag from a catalog entry
       tags:
         - Catalog Entries
-        - Tags
       security:
         - openIdConnect:
             - catalog:write
       parameters:
         - $ref: '#/components/parameters/CatalogEntryIdParameter'
-        - $ref: '#/components/parameters/TagIdParameter'
+        - $ref: '#/components/parameters/TagNameParameter'
         - $ref: '#/components/parameters/VersionParameter'
       responses:
-        '204':
-          description: Tag removed successfully
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
         '404':
           $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
 
   /authors:
     get:
       operationId: getAuthors
       summary: Retrieve authors
-      description: Get a list of authors with optional name filtering
       tags:
         - Authors
       security:
         - openIdConnect:
             - catalog:read
       parameters:
-        - name: name
-          in: query
-          description: Filter by author name (partial match)
-          schema:
-            type: string
+        - $ref: '#/components/parameters/AuthorNameParameter'
         - $ref: '#/components/parameters/PageParameter'
         - $ref: '#/components/parameters/PageSizeParameter'
         - $ref: '#/components/parameters/VersionParameter'
@@ -263,6 +228,8 @@ paths:
           $ref: '#/components/responses/AuthorListResponse'
         '400':
           $ref: '#/components/responses/BadRequestResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
 
     post:
       operationId: createAuthor
@@ -283,6 +250,8 @@ paths:
           $ref: '#/components/responses/BadRequestResponse'
         '409':
           $ref: '#/components/responses/ConflictResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
 
   /authors/{authorId}:
     get:
@@ -301,10 +270,12 @@ paths:
           $ref: '#/components/responses/AuthorResponse'
         '404':
           $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
 
     put:
       operationId: updateAuthor
-      summary: Update author information
+      summary: Update an author
       tags:
         - Authors
       security:
@@ -322,23 +293,20 @@ paths:
           $ref: '#/components/responses/BadRequestResponse'
         '404':
           $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
 
   /publishers:
     get:
       operationId: getPublishers
       summary: Retrieve publishers
-      description: Get a list of publishers with optional name filtering
       tags:
         - Publishers
       security:
         - openIdConnect:
             - catalog:read
       parameters:
-        - name: name
-          in: query
-          description: Filter by publisher name (partial match)
-          schema:
-            type: string
+        - $ref: '#/components/parameters/PublisherNameParameter'
         - $ref: '#/components/parameters/PageParameter'
         - $ref: '#/components/parameters/PageSizeParameter'
         - $ref: '#/components/parameters/VersionParameter'
@@ -347,6 +315,8 @@ paths:
           $ref: '#/components/responses/PublisherListResponse'
         '400':
           $ref: '#/components/responses/BadRequestResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
 
     post:
       operationId: createPublisher
@@ -367,6 +337,8 @@ paths:
           $ref: '#/components/responses/BadRequestResponse'
         '409':
           $ref: '#/components/responses/ConflictResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
 
   /publishers/{publisherId}:
     get:
@@ -385,10 +357,12 @@ paths:
           $ref: '#/components/responses/PublisherResponse'
         '404':
           $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
 
     put:
       operationId: updatePublisher
-      summary: Update publisher information
+      summary: Update a publisher
       tags:
         - Publishers
       security:
@@ -406,22 +380,8 @@ paths:
           $ref: '#/components/responses/BadRequestResponse'
         '404':
           $ref: '#/components/responses/NotFoundResponse'
-
-  /tags:
-    get:
-      operationId: getAllTags
-      summary: Retrieve all available tags
-      description: Get a list of all tags used across catalog entries
-      tags:
-        - Tags
-      security:
-        - openIdConnect:
-            - catalog:read
-      parameters:
-        - $ref: '#/components/parameters/VersionParameter'
-      responses:
-        '200':
-          $ref: '#/components/responses/TagListResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
 
 components:
   parameters:
@@ -471,7 +431,7 @@ components:
     IsbnParameter:
       name: isbn
       in: query
-      description: Filter by ISBN (exact match)
+      description: Filter by ISBN
       schema:
         type: string
         pattern: '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$'
@@ -479,27 +439,44 @@ components:
     TagParameter:
       name: tag
       in: query
-      description: Filter by tag keyword
+      description: Filter by tag
       schema:
         type: string
+        maxLength: 50
 
-    TagIdParameter:
-      name: tagId
-      in: path
+    TagNameParameter:
+      name: tagName
+      in: query
       required: true
-      description: Unique identifier of the tag
+      description: Name of the tag to remove
       schema:
         type: string
-        format: uuid
+        maxLength: 50
+
+    AuthorNameParameter:
+      name: name
+      in: query
+      description: Filter authors by name (partial match)
+      schema:
+        type: string
+        maxLength: 200
+
+    PublisherNameParameter:
+      name: name
+      in: query
+      description: Filter publishers by name (partial match)
+      schema:
+        type: string
+        maxLength: 200
 
     PageParameter:
       name: page
       in: query
-      description: Page number (zero-based)
+      description: Page number for pagination (starts at 1)
       schema:
         type: integer
-        minimum: 0
-        default: 0
+        minimum: 1
+        default: 1
 
     PageSizeParameter:
       name: pageSize
@@ -512,7 +489,7 @@ components:
         default: 20
 
     VersionParameter:
-      name: x-version
+      name: x-api-version
       in: header
       required: true
       description: API version
@@ -525,14 +502,12 @@ components:
     CatalogEntry:
       type: object
       description: |
-        A catalog entry represents a book or library material in the catalog system.
-        This is the main aggregate in the Catalog Management bounded context.
+        A catalog entry represents a book or publication in the library catalog.
+        This is the central aggregate of the Catalog Management bounded context.
       required:
         - id
         - title
-        - authorId
-        - publisherId
-        - isbn
+        - authors
         - publishedOn
         - createdAt
         - updatedAt
@@ -540,20 +515,21 @@ components:
         id:
           type: string
           format: uuid
-          description: Unique identifier (Schlüssel) of the catalog entry
+          description: Unique identifier (Schlüssel)
         title:
           type: string
           minLength: 1
           maxLength: 500
-          description: Title of the book (Titel)
-        authorId:
-          type: string
-          format: uuid
-          description: Reference to the author (Autor)
-        publisherId:
-          type: string
-          format: uuid
-          description: Reference to the publisher (Verlag)
+          description: Title of the publication (Titel)
+        authors:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Author'
+          description: List of authors (Autor)
+        publisher:
+          $ref: '#/components/schemas/Publisher'
+          description: Publisher information (Verlag)
         isbn:
           type: string
           pattern: '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$'
@@ -565,21 +541,22 @@ components:
         abstract:
           type: string
           maxLength: 2000
-          description: Optional abstract or summary (Kurzfassung)
+          description: Brief description or abstract (Kurzfassung)
         tags:
           type: array
           items:
             type: string
-          description: Keywords/tags (Stichwort) associated with this entry
+            maxLength: 50
+          description: Keywords or tags for categorization (Stichwort)
         createdAt:
           type: string
           format: date-time
-          description: Timestamp when entry was created (Erzeugt um)
+          description: Timestamp when the entry was created (Erzeugt um)
           readOnly: true
         updatedAt:
           type: string
           format: date-time
-          description: Timestamp when entry was last updated (Geändert um)
+          description: Timestamp when the entry was last updated (Geändert um)
           readOnly: true
 
     CatalogEntryCreate:
@@ -587,35 +564,43 @@ components:
       description: Request body for creating a new catalog entry
       required:
         - title
-        - authorId
-        - publisherId
-        - isbn
+        - authorIds
         - publishedOn
       properties:
         title:
           type: string
           minLength: 1
           maxLength: 500
-        authorId:
-          type: string
-          format: uuid
+          description: Title of the publication
+        authorIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+          description: List of author IDs
         publisherId:
           type: string
           format: uuid
+          description: Publisher ID
         isbn:
           type: string
           pattern: '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$'
+          description: International Standard Book Number
         publishedOn:
           type: string
           format: date
+          description: Publication date
         abstract:
           type: string
           maxLength: 2000
+          description: Brief description or abstract
         tags:
           type: array
           items:
             type: string
-          maxItems: 50
+            maxLength: 50
+          description: Keywords or tags
 
     CatalogEntryUpdate:
       type: object
@@ -625,9 +610,12 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-        authorId:
-          type: string
-          format: uuid
+        authorIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
         publisherId:
           type: string
           format: uuid
@@ -640,6 +628,11 @@ components:
         abstract:
           type: string
           maxLength: 2000
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
 
     Author:
       type: object
@@ -651,19 +644,16 @@ components:
         id:
           type: string
           format: uuid
+          description: Unique identifier
         name:
           type: string
           minLength: 1
           maxLength: 200
+          description: Full name of the author
         biography:
           type: string
           maxLength: 5000
-        birthDate:
-          type: string
-          format: date
-        nationality:
-          type: string
-          maxLength: 100
+          description: Author biography
         createdAt:
           type: string
           format: date-time
@@ -675,6 +665,7 @@ components:
 
     AuthorCreate:
       type: object
+      description: Request body for creating a new author
       required:
         - name
       properties:
@@ -682,18 +673,15 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+          description: Full name of the author
         biography:
           type: string
           maxLength: 5000
-        birthDate:
-          type: string
-          format: date
-        nationality:
-          type: string
-          maxLength: 100
+          description: Author biography
 
     AuthorUpdate:
       type: object
+      description: Request body for updating an author
       properties:
         name:
           type: string
@@ -702,12 +690,6 @@ components:
         biography:
           type: string
           maxLength: 5000
-        birthDate:
-          type: string
-          format: date
-        nationality:
-          type: string
-          maxLength: 100
 
     Publisher:
       type: object
@@ -719,16 +701,20 @@ components:
         id:
           type: string
           format: uuid
+          description: Unique identifier
         name:
           type: string
           minLength: 1
           maxLength: 200
-        country:
+          description: Name of the publisher
+        location:
           type: string
-          maxLength: 100
+          maxLength: 200
+          description: Publisher location/address
         website:
           type: string
           format: uri
+          description: Publisher website
         createdAt:
           type: string
           format: date-time
@@ -740,6 +726,7 @@ components:
 
     PublisherCreate:
       type: object
+      description: Request body for creating a new publisher
       required:
         - name
       properties:
@@ -747,113 +734,79 @@ components:
           type: string
           minLength: 1
           maxLength: 200
-        country:
+          description: Name of the publisher
+        location:
           type: string
-          maxLength: 100
+          maxLength: 200
+          description: Publisher location
         website:
           type: string
           format: uri
+          description: Publisher website
 
     PublisherUpdate:
       type: object
+      description: Request body for updating a publisher
       properties:
         name:
           type: string
           minLength: 1
           maxLength: 200
-        country:
+        location:
           type: string
-          maxLength: 100
+          maxLength: 200
         website:
           type: string
           format: uri
 
-    Tag:
+    TagAdd:
       type: object
-      description: Tag/keyword entity (Stichwort)
+      description: Request to add a tag to a catalog entry
       required:
-        - id
-        - keyword
+        - tag
       properties:
-        id:
-          type: string
-          format: uuid
-        keyword:
+        tag:
           type: string
           minLength: 1
-          maxLength: 100
-        usageCount:
-          type: integer
-          description: Number of catalog entries using this tag
-          readOnly: true
+          maxLength: 50
+          description: Tag name to add
 
-    TagCreate:
+    PaginationMetadata:
       type: object
+      description: Pagination metadata
       required:
-        - keyword
+        - page
+        - pageSize
+        - totalItems
+        - totalPages
       properties:
-        keyword:
-          type: string
-          minLength: 1
-          maxLength: 100
-
-    PaginatedCatalogEntries:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatalogEntry'
         page:
           type: integer
+          minimum: 1
+          description: Current page number
         pageSize:
           type: integer
+          minimum: 1
+          description: Items per page
         totalItems:
           type: integer
+          minimum: 0
+          description: Total number of items
         totalPages:
           type: integer
-
-    PaginatedAuthors:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Author'
-        page:
-          type: integer
-        pageSize:
-          type: integer
-        totalItems:
-          type: integer
-        totalPages:
-          type: integer
-
-    PaginatedPublishers:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Publisher'
-        page:
-          type: integer
-        pageSize:
-          type: integer
-        totalItems:
-          type: integer
-        totalPages:
-          type: integer
+          minimum: 0
+          description: Total number of pages
 
     Error:
       type: object
+      description: Error response structure
       required:
         - code
         - message
       properties:
         code:
           type: string
-          description: Error code for programmatic handling
+          description: Error code identifier
         message:
           type: string
           description: Human-readable error message
@@ -863,9 +816,7 @@ components:
         timestamp:
           type: string
           format: date-time
-        path:
-          type: string
-          description: API path that generated the error
+          description: Timestamp of the error
 
   responses:
     CatalogEntryResponse:
@@ -880,13 +831,23 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/PaginatedCatalogEntries'
+            type: object
+            required:
+              - data
+              - pagination
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogEntry'
+              pagination:
+                $ref: '#/components/schemas/PaginationMetadata'
 
     CatalogEntryCreatedResponse:
       description: Catalog entry created successfully
       headers:
         Location:
-          description: URI of the created catalog entry
+          description: URI of the created resource
           schema:
             type: string
             format: uri
@@ -907,13 +868,23 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/PaginatedAuthors'
+            type: object
+            required:
+              - data
+              - pagination
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Author'
+              pagination:
+                $ref: '#/components/schemas/PaginationMetadata'
 
     AuthorCreatedResponse:
       description: Author created successfully
       headers:
         Location:
-          description: URI of the created author
+          description: URI of the created resource
           schema:
             type: string
             format: uri
@@ -934,13 +905,23 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/PaginatedPublishers'
+            type: object
+            required:
+              - data
+              - pagination
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Publisher'
+              pagination:
+                $ref: '#/components/schemas/PaginationMetadata'
 
     PublisherCreatedResponse:
       description: Publisher created successfully
       headers:
         Location:
-          description: URI of the created publisher
+          description: URI of the created resource
           schema:
             type: string
             format: uri
@@ -949,24 +930,8 @@ components:
           schema:
             $ref: '#/components/schemas/Publisher'
 
-    TagResponse:
-      description: Single tag response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Tag'
-
-    TagListResponse:
-      description: List of tags
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/Tag'
-
     BadRequestResponse:
-      description: Invalid request
+      description: Invalid request parameters or body
       content:
         application/json:
           schema:
@@ -974,7 +939,10 @@ components:
           example:
             code: BAD_REQUEST
             message: Invalid input data
-            timestamp: "2025-10-02T10:30:00Z"
+            details:
+              field: isbn
+              reason: Invalid ISBN format
+            timestamp: '2025-10-02T14:30:00Z'
 
     NotFoundResponse:
       description: Resource not found
@@ -985,21 +953,21 @@ components:
           example:
             code: NOT_FOUND
             message: Catalog entry not found
-            timestamp: "2025-10-02T10:30:00Z"
+            timestamp: '2025-10-02T14:30:00Z'
 
     ForbiddenResponse:
-      description: Access forbidden
+      description: Access forbidden - insufficient permissions
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
           example:
             code: FORBIDDEN
-            message: Insufficient permissions to access this resource
-            timestamp: "2025-10-02T10:30:00Z"
+            message: Insufficient permissions to perform this operation
+            timestamp: '2025-10-02T14:30:00Z'
 
     ConflictResponse:
-      description: Conflict with existing resource
+      description: Resource conflict (e.g., duplicate ISBN)
       content:
         application/json:
           schema:
@@ -1007,105 +975,145 @@ components:
           example:
             code: CONFLICT
             message: A catalog entry with this ISBN already exists
-            timestamp: "2025-10-02T10:30:00Z"
+            details:
+              isbn: '978-3-16-148410-0'
+              existingEntryId: '123e4567-e89b-12d3-a456-426614174000'
+            timestamp: '2025-10-02T14:30:00Z'
 
     ServiceNotAvailableResponse:
-      description: Service unavailable
+      description: Service temporarily unavailable
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
           example:
             code: SERVICE_UNAVAILABLE
-            message: Service temporarily unavailable
-            timestamp: "2025-10-02T10:30:00Z"
+            message: The catalog service is temporarily unavailable
+            timestamp: '2025-10-02T14:30:00Z'
 
   requestBodies:
     CatalogEntryCreateRequest:
-      description: Catalog entry creation request
+      description: Request body for creating a catalog entry
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/CatalogEntryCreate'
+          example:
+            title: 'Domain-Driven Design: Tackling Complexity in the Heart of Software'
+            authorIds:
+              - '123e4567-e89b-12d3-a456-426614174001'
+            publisherId: '123e4567-e89b-12d3-a456-426614174002'
+            isbn: '978-0-321-12521-7'
+            publishedOn: '2003-08-01'
+            abstract: 'A comprehensive guide to domain-driven design principles and practices for building complex software systems.'
+            tags:
+              - 'software-engineering'
+              - 'architecture'
+              - 'ddd'
 
     CatalogEntryUpdateRequest:
-      description: Catalog entry update request
+      description: Request body for updating a catalog entry
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/CatalogEntryUpdate'
+          example:
+            title: 'Domain-Driven Design: Tackling Complexity in the Heart of Software (Revised Edition)'
+            abstract: 'An updated comprehensive guide to domain-driven design principles and practices.'
+            tags:
+              - 'software-engineering'
+              - 'architecture'
+              - 'ddd'
+              - 'revised'
 
     AuthorCreateRequest:
-      description: Author creation request
+      description: Request body for creating an author
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/AuthorCreate'
+          example:
+            name: 'Eric Evans'
+            biography: 'Eric Evans is a software design consultant and founder of Domain Language, Inc.'
 
     AuthorUpdateRequest:
-      description: Author update request
+      description: Request body for updating an author
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/AuthorUpdate'
+          example:
+            name: 'Eric J. Evans'
+            biography: 'Eric Evans is a thought leader in software design and the author of Domain-Driven Design.'
 
     PublisherCreateRequest:
-      description: Publisher creation request
+      description: Request body for creating a publisher
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/PublisherCreate'
+          example:
+            name: 'Addison-Wesley Professional'
+            location: 'Boston, MA, USA'
+            website: 'https://www.informit.com/imprint/series_detail.aspx?st=61245'
 
     PublisherUpdateRequest:
-      description: Publisher update request
+      description: Request body for updating a publisher
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/PublisherUpdate'
+          example:
+            name: 'Addison-Wesley Professional'
+            location: 'Boston, Massachusetts, USA'
 
     TagAddRequest:
-      description: Request to add a tag to a catalog entry
+      description: Request body for adding a tag to a catalog entry
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/TagCreate'
+            $ref: '#/components/schemas/TagAdd'
+          example:
+            tag: 'bestseller'
 
   securitySchemes:
     openIdConnect:
       type: openIdConnect
       openIdConnectUrl: https://auth.library.com/.well-known/openid-configuration
       description: |
-        OpenID Connect authentication for the Catalog Management API.
-        Required scopes:
-        - catalog:read - Read access to catalog entries, authors, publishers, and tags
-        - catalog:write - Create and update catalog entries and related entities
+        OpenID Connect authentication. Required scopes:
+        - catalog:read - Read access to catalog entries, authors, and publishers
+        - catalog:write - Create and update catalog entries, authors, and publishers
         - catalog:admin - Full administrative access including delete operations
 
   externalDocs:
+    description: Find more information about the Catalog Management API and related bounded contexts
+    url: https://docs.library.com/api/catalog-management
+
+  x-bounded-context-integrations:
     description: |
-      External integrations and related bounded contexts:
+      This API is part of the Catalog Management bounded context. It integrates with the following contexts:
       
-      **Purchase Context**: When books are purchased, this context triggers the creation
-      of new catalog entries. See Purchase API documentation for integration details.
+      - **Catalog Search**: Consumes 'Catalog entry created' and 'Catalog entry updated' events to maintain search indices
+      - **Audio Summary**: Consumes 'Catalog entry created' events to generate audio summaries for books
+      - **Notification**: Receives notifications when new entries are created that match user preferences
+      - **Lending**: References catalog entries for lending operations (read-only)
+      - **Bookshelf**: References catalog entries for user bookshelves (read-only)
+      - **Purchase**: May trigger catalog entry creation when new books are acquired
       
-      **Audio Summary Context**: Consumes catalog entry data to generate audio summaries.
-      Events: BookRead → triggers audio summary creation
+      Events published by this context:
+      - catalog.entry.created (v1)
+      - catalog.entry.updated (v1)
+      - catalog.entry.deleted (v1)
       
-      **Catalog Search Context**: Provides search functionality over catalog entries.
-      This context subscribes to CatalogEntryCreated and CatalogEntryUpdated events
-      to maintain its search index.
-      
-      **Notification Context**: Receives catalog change events to notify users
-      of new books or updates to tracked items.
-      
-      **Lending Context**: References catalog entries when processing book loans.
-      
-      **Bookshelf Context**: Uses catalog data for personal bookshelf organization.
-    url: https://docs.library.com/integrations/catalog-management
+      External APIs:
+      - Catalog Search API: https://api.library.com/search/v1
+      - Lending API: https://api.library.com/lending/v1
+      - Notification API: https://api.library.com/notifications/v1
