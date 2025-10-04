@@ -1,6 +1,6 @@
 extends: [[spectral:oas, 'off']]
 
-documentationUrl:
+documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md
 
 functions:
   - assert-http-codes-for-operation
@@ -29,132 +29,18 @@ rules:
   MUST-null:
     message: "problem parsing {{property}}"
     description: YAML Parser Problem
-    documentationUrl:
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md
     severity: error # Not an error as you only should provide an example to help your consumers
     given: $.paths..[?(@ == null )]
     then:
       field: examples
       function: truthy
 
-  # MUSS eine OpenApi-Spezifikation pro Zielgruppe (audience) verwalten [01-05]
-  01-05_filename-MUST-begin-with-bc-name:
-    message: "{{error}}"
-    description: MUSS eine OpenApi-Spezifikation pro Zielgruppe (audience) verwalten [01-05]
-    documentationUrl:
-    severity: error
-    given: $
-    then:
-      function: filename-begins-with-bc-name
-
-  # MUSS eine OpenApi-Spezifikation pro Zielgruppe (audience) verwalten [01-05]
-  01-05_filename-MUST-end-with-audience:
-    message: "{{error}}"
-    description: MUSS eine OpenApi-Spezifikation pro Zielgruppe (audience) verwalten [01-05]
-    documentationUrl:
-    severity: error
-    given: $
-    then:
-      function: filename-ends-with-audience
-      functionOptions:
-        audienceToSuffixMap:
-          "public-external" : "-api"
-          "federation-internal" : "-federation-internal-api"
-          "insurance-internal" : "-insurance-internal-api"
-          "cluster-internal" : "-cluster-internal-api"
-          "service-internal" : "-service-internal-api"
-
-  # MUST follow API title convention [01-10]
-  01-10_title-MUST-begin-with-bc-name:
-    message: "{{error}}"
-    description: MUSS API Titel Konvention folgen [01-10]
-    documentationUrl:
-    severity: error
-    given: $.info
-    then:
-      - field: title
-        function: truthy
-      - field: title
-        function: title-begins-with-bc-name
-        functionOptions:
-          validBcNames:
-            - Claim Request
-            - Claim Verification
-            - Incoming Invoices
-            - Claim Invoice Confirmation
-            - Copayment Insurant
-            - Indemnification
-            - Fee Codes
-            - Bonus Program Configuration
-            - Electronic Patient Receipts
-            - Electronic Patient Record
-            - Individual Benefits
-            - Insurance Period
-            - Health Insurance Card
-            - Premium Ledger Insurant
-            - Private Customer Data Management
-            - Corporate Customer Data Management
-            - Insurance Period Employer
-            - Premium Ledger Corporate Customer
-            - Other Parties Management
-            - Service Provider Data Management
-            - Service Provider Contracts
-            - Private Customer Care
-            - Corporate Customer Care
-            - Appointment Management
-            - Campaign Management
-            - Manage Events
-            - Clear Event
-            - Workflow Control
-            - Intent Routing
-            - Responsibility Assignment
-            - Skill Management
-            - Workload
-            - Contact Management
-            - In And Outbox
-            - Document Upload
-            - Input Management
-            - Output Management
-            - Virus Scanning
-            - Document Signature
-            - Document Archiving
-            - Employee Data Display
-            - Collection And Disbursement Corporate Customer
-            - Collection and Disbursement Private Customer
-            - Process Tracking
-            - Official Statistics
-            - Security Token Service
-            - Employee Authentication
-            - Corporate Customer Authorization
-            - Private Customer Authorization
-            - Service Provider Authorization
-            - Consent Management
-            - Ident Verification
-            - Audit Read And Change Logging
-            - Notification Service
-
-# MUST follow API title convention [01-10]
-  01-10_title-MUST-end-with-audience:
-    message: "{{error}}"
-    description: MUSS API Titel Konvention folgen [01-10]
-    documentationUrl:
-    severity: error
-    given: $.info
-    then:
-      field: title
-      function: title-ends-with-audience
-      functionOptions:
-        audienceToTitleSuffixMap:
-          "public-external" : ""
-          "federation-internal" : " - federation-internal"
-          "insurance-internal" : " - insurance-internal"
-          "cluster-internal" : " - cluster-internal"
-          "service-internal" : " - service-internal"
-
-  # MUST contain API meta information [02-01]
+  # MUST contain API meta information [01-01]
   02-01_MUST-have-info-description:
     message: Missing `info.description`.
-    description: MUSS OpenAPI Spezifikationen muss Meta-Informationen enthalten [02-01]
-    documentationUrl:
+    description: MUST contain meta data information
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#01-01
     severity: error
     given: $.info
     then:
@@ -164,7 +50,7 @@ rules:
   # MUST contain API meta information [02-01]
   02-01_MUST-have-info-contact-name:
     message: Missing `info.contact.name`.
-    description: MUSS OpenAPI Spezifikationen muss Meta-Informationen enthalten [02-01]
+    description: The info block of an OpenAPI MUST contain a contact name [01-01].
     documentationUrl:
     severity: error
     given: $.info
