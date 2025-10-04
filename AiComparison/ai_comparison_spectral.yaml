@@ -40,7 +40,7 @@ rules:
   01-05_filename-MUST-begin-with-bc-name:
     message: "{{error}}"
     description: MUSS eine OpenApi-Spezifikation pro Zielgruppe (audience) verwalten [01-05]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API/
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $
     then:
@@ -50,7 +50,7 @@ rules:
   01-05_filename-MUST-end-with-audience:
     message: "{{error}}"
     description: MUSS eine OpenApi-Spezifikation pro Zielgruppe (audience) verwalten [01-05]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API/
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $
     then:
@@ -67,7 +67,7 @@ rules:
   01-10_title-MUST-begin-with-bc-name:
     message: "{{error}}"
     description: MUSS API Titel Konvention folgen [01-10]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.info
     then:
@@ -136,7 +136,7 @@ rules:
   01-10_title-MUST-end-with-audience:
     message: "{{error}}"
     description: MUSS API Titel Konvention folgen [01-10]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.info
     then:
@@ -165,7 +165,7 @@ rules:
   02-01_MUST-have-info-contact-name:
     message: Missing `info.contact.name`.
     description: MUSS OpenAPI Spezifikationen muss Meta-Informationen enthalten [02-01]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.info
     then:
@@ -176,7 +176,7 @@ rules:
   02-01_MUST-have-info-contact-url:
     message: Missing `info.contact.url`.
     description: MUSS OpenAPI Spezifikationen muss Meta-Informationen enthalten [02-01]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.info
     then:
@@ -187,7 +187,7 @@ rules:
   02-01_MUST-have-info-contact-email:
     message: Missing `info.contact.email`.
     description: MUSS OpenAPI Spezifikationen muss Meta-Informationen enthalten [02-01]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.info
     then:
@@ -198,7 +198,7 @@ rules:
   02-01_MUST-have-info-x-api-id:
     message: Missing `info.x-api-id`.
     description: MUSS OpenAPI Spezifikationen muss Meta-Informationen enthalten [02-01]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.info
     then:
@@ -210,7 +210,7 @@ rules:
   02-02_MUST-use-semantic-versioning:
     message: '{{error}}'
     description: MUSS Semantic Versioning verwenden [02-02]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.info.version
     then:
@@ -224,7 +224,7 @@ rules:
   02-03_MUST-provide-api-identifiers:
     message: '{{error}}'
     description: MUSS einen eindeutigen API Identifier verwenden [02-03]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.info.x-api-id
     then:
@@ -238,7 +238,7 @@ rules:
   02-04_MUST-provide-api-audience:
     message: "{{error}}"
     description: MUSS Zielgruppe definieren [02-04]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.info
     then:
@@ -256,7 +256,7 @@ rules:
   02-07_MUST-use-bc-name-as-path-prefix:
     message: "{{error}}"
     description: MUSS den Bounded-Context als Präfix für jeden Path verwenden (02-07)
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*
     then:
@@ -266,7 +266,7 @@ rules:
   03-02_MUST-define-security:
     message: "{{error}}"
     description: MUSS security am Endpunkt definieren [03-02]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*.*
     then:
@@ -281,7 +281,7 @@ rules:
   03-ß2_MUST-define-security-requirement-object:
     message: "{{error}}"
     description: MUSS 'openIdConnect' als security requirement object am Endpunkt definieren [03-02]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*.*.security[*]
     then:
@@ -292,7 +292,7 @@ rules:
   03-02_MUST-follow-scope-conventions:
     message: "{{error}}"
     description: MUSS die Namenskonvention für Berechtigungen (Scopes) folgen [03-02]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*.*.security[*].openIdConnect
     then:
@@ -314,7 +314,7 @@ rules:
   03-02_MAY-have-no-scope:
     message: "{{error}}"
     description: DARF Berechtigung (scope) weglassen für öffentliche Endpunkte, die keine Autorisierung erfordern. [03-02]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn
     given: $.paths.*.*.security[*].openIdConnect
     then:
@@ -327,7 +327,7 @@ rules:
   04-02_MUST-define-a-format-for-number-types:
     message: Numeric properties MUST have valid format specified
     description: MUSS das Format von number und integer Typen definieren [04-02]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*.*..schema..properties..[?(@ && @.type=='number')]
     then:
@@ -342,7 +342,7 @@ rules:
   04-02_MUST-define-a-format-for-integer-types:
     message: Numeric properties MUST have valid format specified
     description: MUSS das Format von number und integer Typen definieren [04-02]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*.*..schema..properties..[?(@ && @.type=='integer')]
     then:
@@ -357,7 +357,7 @@ rules:
   04-04_MUST-use-standard-formats-for-date-and-time-properties-example:
     message: "You SHOULD provide an example for {{property}}"
     description: MUSS Standardformate für Datum & Zeit verwenden [04-04]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn # Not an error as you only SHOULD provide an example to help your consumers
     given: $.paths..[?((@ != null && @.type === 'string') && (@.format === 'date-time' || @.format === 'date' || @.format === 'time' || @.format === 'duration' || @.format === 'period'))]
     then:
@@ -368,7 +368,7 @@ rules:
   04-04_MUST-use-standard-formats-for-date-and-time-properties-utc:
     message: "You SHOULD UTC for {{property}}"
     description: MUSS Standardformate für Datum & Zeit verwenden [04-04]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn # Not an error as you only SHOULD provide an example to help your consumers
     given: $.paths..[?( @!= null && @.type === 'string' && @.format === 'date-time')]
     then:
@@ -381,7 +381,7 @@ rules:
   04-06_MUST-use-uuid-for-ids:
     message: "You MUST use UUIDs for Identifiers for {{property}} if possible"
     description: MUSS UUIDs als Identifier verwenden [04-06]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn
     given: $.paths..[?(@ != null && @.schema != null)]
     then:
@@ -391,7 +391,7 @@ rules:
   05-01_SHOULD-NOT-use-api-as-base-path:
     message: Path SHOULD NOT start with /api
     description: SOLLTE Kein /api als Pfadanfang in API-Services verwenden [05-01]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn
     given: $.paths.*~
     then:
@@ -403,7 +403,7 @@ rules:
   05-04_MUST-use-lowercase-with-hypens-for-path-segements:
     message: Path segments have to be lowercase separate words with hyphens
     description: MUSS kebab-case für den Pfad verwenden [05-04]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*~
     then:
@@ -415,7 +415,7 @@ rules:
   05-04_MUST-use-normalized-paths-without-empty-path-segments:
     message: Empty path segments are not allowed
     description: MUSS normalisierte Pfade verwenden [05-05]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*~
     then:
@@ -427,7 +427,7 @@ rules:
   05-05_MUST-use-normalized-paths-without-trailing-slash:
     message: Path with trailing slash is not allowed
     description: MUSS normalisierte Pfade verwenden [05-05]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*~
     then:
@@ -439,7 +439,7 @@ rules:
   05-09_SHOULD-limit-number-of-resource-types:
     message: '{{error}}'
     description: SOLLTE Anzahl von Ressourcen pro API limitieren [05-09]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn
     given: $.paths
     then:
@@ -451,7 +451,7 @@ rules:
   05-10_SHOULD-limit-number-of-sub-resource-levels:
     message: Sub-resource levels SHOULD by <= 3
     description: SOLLTE Schachtelungstiefe von Sub-Ressourcen limitieren [05-10]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl:https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn
     given: $.paths.*~
     then:
@@ -475,7 +475,7 @@ rules:
   06-04_MUST-use-camel-case-for-property-names:
     message: Property name has to be ASCII camelCase
     description: MUSS Attribut-Namen im camelCase [06-04]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*.*[responses,requestBody]..content..schema..properties.*~
     then:
@@ -487,7 +487,7 @@ rules:
   06-05_SHOULD-declare-enum-values-using-upper-snake-case-format:
     message: 'Enum values SHOULD be in UPPER_SNAKE_CASE format'
     description: SOLLTE Enum-Werte in SNAKE_CASE [06-05]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn
     given: $.paths..[?(@ && @.type=='string')].[enum,x-extensible-enum].*
     then:
@@ -499,7 +499,7 @@ rules:
   06-09_MUST-NOT-use-null-for-boolean:
     message: "MUST NOT use null for boolean properties - provide a default"
     description: MUSS boolean Typen dürfen kein null verwenden [06-09]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths..[?((@ != null && @.type === 'boolean'))]
     then:
@@ -510,7 +510,7 @@ rules:
   06-10_SHOULD-NOT-use-null-for-empty-arrays:
     message: "provide the field minItems for arrays. Consider providing [] for nullable lists"
     description: SOLL leere Arrays nicht als null verwenden [06-10]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn
     given: $.paths..[?((@ != null && @.type === 'array'))]
     then:
@@ -521,7 +521,7 @@ rules:
   08-01_SHOULD-use-well-understood-http-status-codes:
     message: '{{error}}'
     description: MUSS Standard-Status-Codes verwenden [08-01]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn
     given: $.paths.*
     then:
@@ -568,7 +568,7 @@ rules:
   08-02_MUST-specify-default-response:
     message: Operation does not contain a default response
     description: MUSS Erfolg und Fehler spezifizieren [08-02]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*.*.responses
     then:
@@ -579,7 +579,7 @@ rules:
   08-03_MUST-use-standard-http-status-codes:
     message: '{{property}} is not a standardized response code'
     description: MUSS Standard-Status-Codes verwenden [08-03]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*.*.responses.*~
     then:
@@ -639,7 +639,7 @@ rules:
   08-05_MUST-use-valid-error-json-schema:
     message: '{{error}}'
     description: MUSS Error-Object verwenden [08-05]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.components.schemas
     then:
@@ -650,7 +650,7 @@ rules:
   09-02_SHOULD-use-hyphenated-pascal-case-for-header-parameters:
     message: Header parameters SHOULD be Kebab-Case
     description: MUSS einheitliches Format für Header-Parameter verwenden [09-02]
-    documentationUrl:  https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl:  https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn
     given: $.paths..parameters[?(@ && @.in=='header')].name
     then:
@@ -671,7 +671,7 @@ rules:
   09-04_MUST-use-header-api-version:
     message: "MUST specify 'x-api-version' as required header"
     description: MUSS verpflichtende Headers implementieren (09-04) + MUSS custom-header-Versionierung verwenden [13-06]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: "$.paths[*][*].parameters"
     then:
@@ -682,7 +682,7 @@ rules:
   09-05_MUST-use-header-as-tenant-or-as-product:
     message: "{{error}}"
     description: "Exactly one of both headers is required to enable routing to the correct target cluster"
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: "$.paths[*][*].parameters"
     then:
@@ -699,7 +699,7 @@ rules:
     The header value SHOULD be specified as an x-entensible-enum with at least one value that matches the
     respective API audience. Specifying more than one enum value usually makes no sense since one API file has
     exactly one audience (see [01-05])."
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: "$.paths[*][*].parameters"
     then:
@@ -716,7 +716,7 @@ rules:
   13-07_MUST-NOT-use-uri-versioning:
     message: Path MUST not contain versioning
     description: MUSS keine URL Versionierung verwenden [13-07]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*~
     then:
@@ -728,7 +728,7 @@ rules:
   13-08_MUST-always-return-json-objects-as-top-level-data-structures:
     message: 'Top-level data structure MUST be an object'
     description: MUSS immer ein JSON-Objekt als Top-Level-Element verwenden. [13-08]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl:https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error
     given: $.paths.*.*[responses,requestBody]..content..schema
     then:
@@ -738,7 +738,7 @@ rules:
   13-09_SHOULD-use-x-extensible-enum:
     message: 'Should use `x-extensible-enum` instead of `enum`'
     description: SOLL extendable-enum für Enums verwenden [13-09]
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: warn
     given: $.paths..[?(@ != null && @.schema != null)]
     then:
