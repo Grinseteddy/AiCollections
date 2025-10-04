@@ -37,7 +37,7 @@ rules:
       function: truthy
 
   # MUST contain API meta information [01-01]
-  02-01_MUST-have-info-description:
+  01-01_MUST-have-info-description:
     message: Missing `info.description`.
     description: MUST contain meta data information
     documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#01-01
@@ -47,56 +47,45 @@ rules:
       field: description
       function: truthy
 
-  # MUST contain API meta information [02-01]
-  02-01_MUST-have-info-contact-name:
+  # MUST contain API meta information [01-02]
+  01-02_MUST-have-info-contact-name:
     message: Missing `info.contact.name`.
-    description: The info block of an OpenAPI MUST contain a contact name [01-01].
-    documentationUrl:
+    description: OpenAPI MUST contain meta data contact name [01-02].
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#01-02
     severity: error
     given: $.info
     then:
       field: contact.name
       function: truthy
 
-  # MUST contain API meta information [02-01]
-  02-01_MUST-have-info-contact-url:
-    message: Missing `info.contact.url`.
-    description: MUSS OpenAPI Spezifikationen muss Meta-Informationen enthalten [02-01]
-    documentationUrl:
-    severity: error
-    given: $.info
-    then:
-      field: contact.url
-      function: truthy
-
-  # MUST contain API meta information [02-01]
-  02-01_MUST-have-info-contact-email:
+  # MUST contain API meta information [01-02]
+  01-02_MUST-have-info-contact-email:
     message: Missing `info.contact.email`.
-    description: MUSS OpenAPI Spezifikationen muss Meta-Informationen enthalten [02-01]
-    documentationUrl:
+    description: OpenAPI MUST contain meta data [01-02]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#01-02
     severity: error
     given: $.info
     then:
       field: contact.email
       function: truthy
 
-  # MUST contain API meta information [02-01]
-  02-01_MUST-have-info-x-api-id:
+  # MUST contain API meta information [01-03]
+  01-03_MUST-have-info-x-api-id:
     message: Missing `info.x-api-id`.
-    description: MUSS OpenAPI Spezifikationen muss Meta-Informationen enthalten [02-01]
-    documentationUrl:
+    description: OpenAPI MUST contain unique identifier of the API [01-03]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#01-03
     severity: error
     given: $.info
     then:
       field: x-api-id
       function: truthy
 
-  # MUST use semantic versioning [02-02]
+  # MUST use semantic versioning [01-04]
   # => https://opensource.zalando.com/restful-api-guidelines/#116
-  02-02_MUST-use-semantic-versioning:
+  01-04_MUST-use-semantic-versioning:
     message: '{{error}}'
-    description: MUSS Semantic Versioning verwenden [02-02]
-    documentationUrl:
+    description: MUST use semantic versioning [01-04]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#01-04
     severity: error
     given: $.info.version
     then:
@@ -106,25 +95,12 @@ rules:
           type: string
           pattern: '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?$'
 
-  # MUST provide API identifiers [02-03]
-  02-03_MUST-provide-api-identifiers:
-    message: '{{error}}'
-    description: MUSS einen eindeutigen API Identifier verwenden [02-03]
-    documentationUrl:
-    severity: error
-    given: $.info.x-api-id
-    then:
-      function: schema
-      functionOptions:
-        schema:
-          type: string
-          pattern: ^[a-z0-9][a-z0-9-:.]{6,62}[a-z0-9]$
 
-  # MUST provide API audience [02-04]
-  02-04_MUST-provide-api-audience:
+  # MUST provide API audience [01-06]
+  01-06_MUST-provide-api-audience:
     message: "{{error}}"
-    description: MUSS Zielgruppe definieren [02-04]
-    documentationUrl:
+    description: MUST define a target group [01-06]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#01-06
     severity: error
     given: $.info
     then:
@@ -133,25 +109,13 @@ rules:
         functionOptions:
           values:
             - public-external
-            - federation-internal
-            - insurance-internal
             - cluster-internal
             - service-internal
 
-  # MUSS den Bounded-Context als Präfix für jeden Path verwenden (02-07)
-  02-07_MUST-use-bc-name-as-path-prefix:
+  # MUST provide security scopes [02-01]
+  02-01_MUST-define-security:
     message: "{{error}}"
-    description: MUSS den Bounded-Context als Präfix für jeden Path verwenden (02-07)
-    documentationUrl:
-    severity: error
-    given: $.paths.*
-    then:
-      function: has-path-prefix
-
-  # MUSS follow naming conventions for permission scopes [03-02]
-  03-02_MUST-define-security:
-    message: "{{error}}"
-    description: MUSS security am Endpunkt definieren [03-02]
+    description: MUST contain a security scope [02-01]
     documentationUrl:
     severity: error
     given: $.paths.*.*
@@ -163,32 +127,27 @@ rules:
             type: array
             minItems: 1
 
-  # MUSS follow naming conventions for permission scopes [03-02]
-  03-ß2_MUST-define-security-requirement-object:
+  # MUST contain a security scope [02-02]
+  02-02_MUST-define-security-requirement-object:
     message: "{{error}}"
-    description: MUSS 'openIdConnect' als security requirement object am Endpunkt definieren [03-02]
-    documentationUrl:
+    description: MUST contain a security scope [02-02]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#02-02
     severity: error
     given: $.paths.*.*.security[*]
     then:
       field: openIdConnect
       function: truthy
 
-  # MUSS follow naming conventions for permission scopes [03-02]
-  03-02_MUST-follow-scope-conventions:
+  # MUST contain a security scope [02-02]
+  02-02_MUST-follow-scope-conventions:
     message: "{{error}}"
     description: MUSS die Namenskonvention für Berechtigungen (Scopes) folgen [03-02]
-    documentationUrl:
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#02-02
     severity: error
     given: $.paths.*.*.security[*].openIdConnect
     then:
       function: scope-conventions
       functionOptions:
-        audienceToPerimeterPermissionMap:
-          "federation-internal" : "federation_internal"
-          "insurance-internal" : "insurance_internal"
-          "cluster-internal" : "insurance_internal"
-          "service-internal" : "insurance_internal"
         httpVerbToAccessModesMap:
           "GET" : ["read"]
           "POST" : ["write", "read"]
@@ -196,24 +155,11 @@ rules:
           "PATCH" : ["write"]
           "DELETE" : ["write"]
 
-  # MUSS follow naming conventions for permission scopes [03-02]
-  03-02_MAY-have-no-scope:
-    message: "{{error}}"
-    description: DARF Berechtigung (scope) weglassen für öffentliche Endpunkte, die keine Autorisierung erfordern. [03-02]
-    documentationUrl:
-    severity: warn
-    given: $.paths.*.*.security[*].openIdConnect
-    then:
-      function: has-no-scopes
-      functionOptions:
-        audiences:
-          - "public-external"
-
-  # MUST define a format for number and integer types [04-02]
-  04-02_MUST-define-a-format-for-number-types:
+  # MUST define a format for number and integer types [03-01]
+  03-01_MUST-define-a-format-for-number-types:
     message: Numeric properties MUST have valid format specified
-    description: MUSS das Format von number und integer Typen definieren [04-02]
-    documentationUrl:
+    description: If using number or integer type, formatting MUST be defined [03-01]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#03-01
     severity: error
     given: $.paths.*.*..schema..properties..[?(@ && @.type=='number')]
     then:
@@ -224,11 +170,11 @@ rules:
         functionOptions:
           match: ^(float|double|decimal)$
 
-  # MUST define a format for number and integer types [04-02]
-  04-02_MUST-define-a-format-for-integer-types:
+  # MUST define a format for number and integer types [03-01]
+  03-01_MUST-define-a-format-for-integer-types:
     message: Numeric properties MUST have valid format specified
-    description: MUSS das Format von number und integer Typen definieren [04-02]
-    documentationUrl:
+    description: If using number or integer type, formatting MUST be defined [03-01]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#03-01
     severity: error
     given: $.paths.*.*..schema..properties..[?(@ && @.type=='integer')]
     then:
@@ -239,22 +185,22 @@ rules:
         functionOptions:
           match: ^(int32|int64|bigint)$
 
-  # MUST use standard formats for date and time properties [04-04]
-  04-04_MUST-use-standard-formats-for-date-and-time-properties-example:
+  # MUST use standard formats for date and time properties [03-02]
+  03-02_MUST-use-standard-formats-for-date-and-time-properties-example:
     message: "You SHOULD provide an example for {{property}}"
-    description: MUSS Standardformate für Datum & Zeit verwenden [04-04]
-    documentationUrl:
+    description: If using date or time properties, the formatting has to be given [03-02]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#03-02
     severity: warn # Not an error as you only SHOULD provide an example to help your consumers
     given: $.paths..[?((@ != null && @.type === 'string') && (@.format === 'date-time' || @.format === 'date' || @.format === 'time' || @.format === 'duration' || @.format === 'period'))]
     then:
       field: examples
       function: truthy
 
-  # MUST use standard formats for date and time properties [04-04]
-  04-04_MUST-use-standard-formats-for-date-and-time-properties-utc:
+  # MUST use standard formats for date and time properties [03-02]
+  03-02_MUST-use-standard-formats-for-date-and-time-properties-utc:
     message: "You SHOULD UTC for {{property}}"
-    description: MUSS Standardformate für Datum & Zeit verwenden [04-04]
-    documentationUrl:
+    description: If using date or time properties, the formatting has to be given [03-02]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#03-02
     severity: warn # Not an error as you only SHOULD provide an example to help your consumers
     given: $.paths..[?( @!= null && @.type === 'string' && @.format === 'date-time')]
     then:
@@ -263,11 +209,11 @@ rules:
       functionOptions:
         match: "Z$"
 
-  # MUSS UUIDs als Identifier verwenden [04-06]
-  04-06_MUST-use-uuid-for-ids:
+  # MUST use UUIDs [04-01]
+  04-01_MUST-use-uuid-for-ids:
     message: "You MUST use UUIDs for Identifiers for {{property}} if possible"
-    description: MUSS UUIDs als Identifier verwenden [04-06]
-    documentationUrl:
+    description: Identifiers of properties MUST use UUIDs [04-01]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#04-01
     severity: warn
     given: $.paths..[?(@ != null && @.schema != null)]
     then:
@@ -276,8 +222,8 @@ rules:
   # SHOULD NOT use /api as base path [05-01]
   05-01_SHOULD-NOT-use-api-as-base-path:
     message: Path SHOULD NOT start with /api
-    description: SOLLTE Kein /api als Pfadanfang in API-Services verwenden [05-01]
-    documentationUrl:
+    description: SHOULD NOT start with /api [05-01]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#05-01
     severity: warn
     given: $.paths.*~
     then:
@@ -285,11 +231,11 @@ rules:
       functionOptions:
         notMatch: ^/api
 
-  # MUST use lowercase separate words with hyphens for path segments [05-04]
-  05-04_MUST-use-lowercase-with-hypens-for-path-segements:
+  # The path segments MUST be separated words in lowercase with hyphens. [05-02]
+  05-02_MUST-use-lowercase-with-hypens-for-path-segements:
     message: Path segments have to be lowercase separate words with hyphens
-    description: MUSS kebab-case für den Pfad verwenden [05-04]
-    documentationUrl:
+    description: The path segments MUST use kebab-cases [05-02]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#05-02
     severity: error
     given: $.paths.*~
     then:
@@ -297,11 +243,11 @@ rules:
       functionOptions:
         match: ^(?=((([\/a-z][a-z0-9\-\/]*)?({[^}]*})?)+))\1$
 
-  # MUST use normalized paths without empty path segments and trailing slashes [05-05]
-  05-04_MUST-use-normalized-paths-without-empty-path-segments:
+  # MUST use normalized paths without empty path segments and trailing slashes [05-03]
+  05-03_MUST-use-normalized-paths-without-empty-path-segments:
     message: Empty path segments are not allowed
-    description: MUSS normalisierte Pfade verwenden [05-05]
-    documentationUrl:
+    description: Path MUST use normalized [05-03]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#05-03
     severity: error
     given: $.paths.*~
     then:
@@ -309,11 +255,11 @@ rules:
       functionOptions:
         notMatch: //
 
-  # MUST use normalized paths without empty path segments and trailing slashes [05-05]
-  05-05_MUST-use-normalized-paths-without-trailing-slash:
+  # MUST use normalized paths without empty path segments and trailing slashes [05-03]
+  05-03_MUST-use-normalized-paths-without-trailing-slash:
     message: Path with trailing slash is not allowed
-    description: MUSS normalisierte Pfade verwenden [05-05]
-    documentationUrl:
+    description: Path MUST use normalized [05-03]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#05-03
     severity: error
     given: $.paths.*~
     then:
@@ -321,11 +267,11 @@ rules:
       functionOptions:
         notMatch: /$
 
-  # SHOULD limit number of resource types [05-09]
-  05-09_SHOULD-limit-number-of-resource-types:
+  # SHOULD limit number of resource types [06-01]
+  06-01_SHOULD-limit-number-of-resource-types:
     message: '{{error}}'
-    description: SOLLTE Anzahl von Ressourcen pro API limitieren [05-09]
-    documentationUrl:
+    description: should limit the number of resource types [06-01]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#06-01
     severity: warn
     given: $.paths
     then:
@@ -333,11 +279,11 @@ rules:
       functionOptions:
         max: 8
 
-  # SHOULD limit number of sub-resource levels [05-10]
-  05-10_SHOULD-limit-number-of-sub-resource-levels:
+  # SHOULD limit number of sub-resource levels [06-02]
+  06-02_SHOULD-limit-number-of-sub-resource-levels:
     message: Sub-resource levels SHOULD by <= 3
-    description: SOLLTE Schachtelungstiefe von Sub-Ressourcen limitieren [05-10]
-    documentationUrl:
+    description: The API SHOULD limit number of sub-resource levels [06-02]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#06-02
     severity: warn
     given: $.paths.*~
     then:
@@ -345,11 +291,11 @@ rules:
       functionOptions:
         match: ^\/[^\/]*((\/{[^}]*})*\/[^\/]*(\/{[^}]*})*){0,3}\/?$
 
-  # MUST use camelCase for query parameters [05-11]
-  05-11_MUST-use-snake-case-for-query-parameters:
+  # MUST use camelCase for query parameters [0]
+  07-01_MUST-use-snake-case-for-query-parameters:
     message: Query parameters MUST be camelCase
-    description: MUSS camelCase für Query-Parameter verwenden [05-11]
-    documentationUrl:
+    description: The API MUST use camelCase for query parameters [07-01]
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/RuleSetDescription.md#07-01
     severity: error
     given: $.paths.*.*.parameters[?(@ && @.in=='query')].name
     then:
@@ -357,10 +303,10 @@ rules:
       functionOptions:
         match: '^[a-z][a-z]*(([A-Z][a-z]+)*[A-Z]?|([a-z]+[A-Z])*|[A-Z])$'
 
-  # MUST property names MUST be ASCII camelCase [06-04]
-  06-04_MUST-use-camel-case-for-property-names:
+  # MUST property names MUST be ASCII camelCase [07-02]
+  07-02_MUST-use-camel-case-for-property-names:
     message: Property name has to be ASCII camelCase
-    description: MUSS Attribut-Namen im camelCase [06-04]
+    description: The API must use camelCase for property names. [07-02]
     documentationUrl:
     severity: error
     given: $.paths.*.*[responses,requestBody]..content..schema..properties.*~
@@ -369,10 +315,10 @@ rules:
       functionOptions:
         match: '^[a-z][a-z]*(([A-Z][a-z]+)*[A-Z]?|([a-z]+[A-Z])*|[A-Z])$'
 
-  # SHOULD declare enum values using UPPER_SNAKE_CASE format [06-05]
-  06-05_SHOULD-declare-enum-values-using-upper-snake-case-format:
+  # SHOULD declare enum values using UPPER_SNAKE_CASE format [07-03]
+  07-03_SHOULD-declare-enum-values-using-upper-snake-case-format:
     message: 'Enum values SHOULD be in UPPER_SNAKE_CASE format'
-    description: SOLLTE Enum-Werte in SNAKE_CASE [06-05]
+    description: The API SHOULD declare enum values using UPPER_SNAKE_CASE format. [07-03]
     documentationUrl:
     severity: warn
     given: $.paths..[?(@ && @.type=='string')].[enum,x-extensible-enum].*
@@ -381,10 +327,10 @@ rules:
       functionOptions:
         match: ^[A-Z_0-9.]*$
 
-  # MUSS boolean Typen dürfen kein null verwenden [06-09]
-  06-09_MUST-NOT-use-null-for-boolean:
+  # Boolean types MUST NOT use Null. [08-01]
+  08-01_MUST-NOT-use-null-for-boolean:
     message: "MUST NOT use null for boolean properties - provide a default"
-    description: MUSS boolean Typen dürfen kein null verwenden [06-09]
+    description: Boolean types MUST NOT use Null. [08-01]
     documentationUrl:
     severity: error
     given: $.paths..[?((@ != null && @.type === 'boolean'))]
@@ -392,10 +338,10 @@ rules:
       field: default
       function: is-not-undefined
 
-  # SOLL leere Arrays nicht als null verwenden [06-10]
+  # NULL SHOULD NOT be used for empty array. [08-02]
   06-10_SHOULD-NOT-use-null-for-empty-arrays:
     message: "provide the field minItems for arrays. Consider providing [] for nullable lists"
-    description: SOLL leere Arrays nicht als null verwenden [06-10]
+    description: NULL SHOULD NOT be used for empty array. [08-02]
     documentationUrl:
     severity: warn
     given: $.paths..[?((@ != null && @.type === 'array'))]
@@ -403,10 +349,10 @@ rules:
       field: minItems
       function: is-not-undefined
 
-  # MUSS Standard-Status-Codes verwenden [08-01]
-  08-01_SHOULD-use-well-understood-http-status-codes:
+  # Responses SHOULD use well understood status codes. [05-04]
+  05-04_SHOULD-use-well-understood-http-status-codes:
     message: '{{error}}'
-    description: MUSS Standard-Status-Codes verwenden [08-01]
+    description: MUSS Standard-Status-Codes verwenden [05-04]
     documentationUrl:
     severity: warn
     given: $.paths.*
@@ -450,10 +396,10 @@ rules:
           # OpenApi
           'default': [ ALL ]
 
-  # MUST specify success and error responses [08-02]
-  08-02_MUST-specify-default-response:
+  # MUST specify success and error responses [05-05]
+  05-05_MUST-specify-default-response:
     message: Operation does not contain a default response
-    description: MUSS Erfolg und Fehler spezifizieren [08-02]
+    description: The API MUST specify success and error responses. [05-05]
     documentationUrl:
     severity: error
     given: $.paths.*.*.responses
@@ -461,10 +407,10 @@ rules:
       field: default
       function: truthy
 
-  # MUST use standard HTTP status codes [08-03]
-  08-03_MUST-use-standard-http-status-codes:
+  # MUST use standard HTTP status codes [05-06]
+  05-06_MUST-use-standard-http-status-codes:
     message: '{{property}} is not a standardized response code'
-    description: MUSS Standard-Status-Codes verwenden [08-03]
+    description: The API MUST use standard HTTP status codes [05-06]
     documentationUrl:
     severity: error
     given: $.paths.*.*.responses.*~
@@ -521,10 +467,10 @@ rules:
           - '511'
           - default
 
-  # MUST muse Error Json[08-05]
-  08-05_MUST-use-valid-error-json-schema:
+  # MUST muse Error Json[05-07]
+  05-07_MUST-use-valid-error-json-schema:
     message: '{{error}}'
-    description: MUSS Error-Object verwenden [08-05]
+    description: The error responses MUST use Error object [05-07]
     documentationUrl:
     severity: error
     given: $.components.schemas
@@ -532,76 +478,20 @@ rules:
       field: Error
       function: is-error-json-schema
 
-  # SHOULD prefer hyphenated-pascal-case for HTTP header fields [09-02]
-  09-02_SHOULD-use-hyphenated-pascal-case-for-header-parameters:
+  # SHOULD prefer hyphenated-pascal-case for HTTP header fields [07-04]
+  07-04_SHOULD-use-hyphenated-pascal-case-for-header-parameters:
     message: Header parameters SHOULD be Kebab-Case
-    description: MUSS einheitliches Format für Header-Parameter verwenden [09-02]
+    description: The API SHOULD use hyphenated-pascal-case for header parameters [07-04]
     documentationUrl:
     severity: warn
     given: $.paths..parameters[?(@ && @.in=='header')].name
     then:
       function: rule-132
 
-  # MUSS verpflichtende Headers implementieren (09-04)
-  09-04_MUST-use-header-api-key:
-    message: "MUST specify 'x-api-key' as required header"
-    description: MUSS verpflichtende Headers implementieren [09-04]
-    severity: error
-    given: "$.paths[*][*].parameters"
-    then:
-      function: truthy
-      field: "$.[?(@.in == 'header' && @.name == 'x-api-key' && @.required == true)]"
-
-  # MUSS verpflichtende Headers implementieren (09-04)
-  # MUSS custom-header-Versionierung verwenden (13-06)
-  09-04_MUST-use-header-api-version:
-    message: "MUST specify 'x-api-version' as required header"
-    description: MUSS verpflichtende Headers implementieren (09-04) + MUSS custom-header-Versionierung verwenden [13-06]
-    documentationUrl:
-    severity: error
-    given: "$.paths[*][*].parameters"
-    then:
-      function: truthy
-      field: "$.[?(@.in == 'header' && @.name == 'x-api-version' && @.required == true)]"
-
-  # MUSS Routing Headers implementieren (09-05)
-  09-05_MUST-use-header-as-tenant-or-as-product:
-    message: "{{error}}"
-    description: "Exactly one of both headers is required to enable routing to the correct target cluster"
-    documentationUrl:
-    severity: error
-    given: "$.paths[*][*].parameters"
-    then:
-      function: has-exactly-one-of-required-headers
-      functionOptions:
-        exclusiveHeaders:
-          - x-as-tenant
-          - x-as-product
-
-  # MUSS Routing Headers implementieren (09-05)
-  09-05_MUST-use-header-as-audience:
-    message: "{{error}}"
-    description: "The audience header is required for internal calls to implement and enforce WAF rules.
-    The header value SHOULD be specified as an x-entensible-enum with at least one value that matches the
-    respective API audience. Specifying more than one enum value usually makes no sense since one API file has
-    exactly one audience (see [01-05])."
-    documentationUrl:
-    severity: error
-    given: "$.paths[*][*].parameters"
-    then:
-      function: has-audience-header
-      functionOptions:
-        headerName: "x-as-audience"
-        audienceToHeaderValueMap:
-          "federation-internal" : "FEDERATION_INTERNAL"
-          "insurance-internal" : "INSURANCE_INTERNAL"
-          "cluster-internal" : "CLUSTER_INTERNAL"
-          "service-internal" : "SERVICE_INTERNAL"
-
-  # MUST not use URI versioning [13-07]
-  13-07_MUST-NOT-use-uri-versioning:
+  # MUST not use URI versioning [09-01]
+  09-01_MUST-NOT-use-uri-versioning:
     message: Path MUST not contain versioning
-    description: MUSS keine URL Versionierung verwenden [13-07]
+    description: MUSS keine URL Versionierung verwenden [09-01]
     documentationUrl:
     severity: error
     given: $.paths.*~
@@ -610,47 +500,34 @@ rules:
       functionOptions:
         notMatch: /v[0-9]+/
 
-  # MUST always return JSON objects as top-level data structures [13-08]
-  13-08_MUST-always-return-json-objects-as-top-level-data-structures:
+  # MUST use header versioning [09-02]
+  09-02_MUST-use-header-api-version:
+    message: "MUST specify 'x-api-version' as required header"
+    description: The API MUST use a header parameter for versioning [09-02]
+    documentationUrl:
+    severity: error
+    given: "$.paths[*][*].parameters"
+    then:
+      function: truthy
+      field: "$.[?(@.in == 'header' && @.name == 'x-api-version' && @.required == true)]"
+
+  # MUST always return JSON objects as top-level data structure [05-08]
+  05-08_MUST-always-return-json-objects-as-top-level-data-structures:
     message: 'Top-level data structure MUST be an object'
-    description: MUSS immer ein JSON-Objekt als Top-Level-Element verwenden. [13-08]
+    description: An endpoint MUST always return a JSON object as top-level data structure [05-08]
     documentationUrl:
     severity: error
     given: $.paths.*.*[responses,requestBody]..content..schema
     then:
       function: is-object-schema
 
-  # SHOULD use open-ended list of values (x-extensible-enum) for enumerations [13-09]
-  13-09_SHOULD-use-x-extensible-enum:
+  # SHOULD use open-ended list of values (x-extensible-enum) for enumerations [08-03]
+  08-03_SHOULD-use-x-extensible-enum:
     message: 'Should use `x-extensible-enum` instead of `enum`'
-    description: SOLL extendable-enum für Enums verwenden [13-09]
+    description: The schema SHOULD use open-ended list of values (x-extensible-enum) for enum [08-03]
     documentationUrl:
     severity: warn
     given: $.paths..[?(@ != null && @.schema != null)]
     then:
       function: enum-allow-list
 
-  # TODO: [DK] check default
-  # MUST-use-problem-json-as-default-response:
-  #  message: Operation MUST use problem json as default response
-  #  description: MUST specify success and error responses [151]
-  #  documentationUrl: https://opensource.zalando.com/restful-api-guidelines/#151
-  #  severity: error
-  #  given: $.paths.*.*.responses.default
-  #  then:
-  #    field: content.application/problem+json
-  #    function: truthy
-
-  # TODO: [DK] check default
-  # MUST support problem JSON [176]
-  # => https://opensource.zalando.com/restful-api-guidelines/#176
-
-  #MUST-use-problem-json-for-errors:
-  #  message: Error response MUST be application/problem+json
-  #  description: MUST support problem JSON [176]
-  #  documentationUrl: https://opensource.zalando.com/restful-api-guidelines/#176
-  #  severity: error
-  #  given: $.paths.*.*.responses[?(@ && @property.match(/^(4|5)/))]
-  #  then:
-  #    field: content.application/problem+json
-  #    function: truthy
