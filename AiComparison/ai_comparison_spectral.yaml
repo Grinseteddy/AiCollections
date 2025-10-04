@@ -1,6 +1,6 @@
 extends: [[spectral:oas, 'off']]
 
-documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API
+documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
 
 functions:
   - assert-http-codes-for-operation
@@ -29,7 +29,7 @@ rules:
   MUST-null:
     message: "problem parsing {{property}}"
     description: YAML Parser Problem
-    documentationUrl: https://confluence.aok-systems.de/display/public/SORLPR/Arbeitsanweisung+API/
+    documentationUrl: https://github.com/Grinseteddy/AiCollections/blob/main/AiComparison/DescriptionLinter.md
     severity: error # Not an error as you only should provide an example to help your consumers
     given: $.paths..[?(@ == null )]
     then:
