@@ -56,7 +56,7 @@ The following table gives an overview in comparison of the different LLMs.
 
 | Provider  | Model             | Sync/Async |   Grade    | Details |
 |-----------|-------------------|------------|:----------:|---------|
-| Anthropic | Claude Sonnet 4.5 | Sync |    good    |[Sonnet 4.5](#Sonnet-4-5)
+| Anthropic | Claude Sonnet 4.5 | Sync |    good    |[Sonnet 4.5](#Sonnet-4.5)
 | Anthropic | Claude Sonnet 4.5 | Async | very good  |
 | Anthropic | Claude Opus 4.1   | Sync |    good    |
 | Anthropic | Claude Opus 4.1   | Async | very good  |
