@@ -63,7 +63,7 @@ The following table gives an overview in comparison of the different LLMs.
 | OpenAI    | ChatGPT 5         | Sync |  Adequate  |
 | OpenAI    | ChatGPT 5         | Async |  Adequate  |
 | OpenAI    | ChatGPT 4 | Sync | Not usable |
-| OpenAI    | CChatGPT 4 | Async | Not usable | [ChatGPT 4](ChatGPT-4)
+| OpenAI    | CChatGPT 4 | Async | Not usable | [ChatGPT 4](#ChatGPT-4)
 
 ### Anthropic
 
