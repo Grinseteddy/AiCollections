@@ -56,13 +56,13 @@ The following table gives an overview in comparison of the different LLMs.
 
 | Provider  | Model             | Sync/Async |   Grade    | Details |
 |-----------|-------------------|------------|:----------:|---------|
-| Anthropic | Claude Sonnet 4.5 | Sync |    good    |[Sonnet 4.5](#Sonnet-45)
-| Anthropic | Claude Sonnet 4.5 | Async | very good  |
-| Anthropic | Claude Opus 4.1   | Sync |    good    |
-| Anthropic | Claude Opus 4.1   | Async | very good  |
-| OpenAI    | ChatGPT 5         | Sync |  Adequate  |
-| OpenAI    | ChatGPT 5         | Async |  Adequate  |
-| OpenAI    | ChatGPT 4 | Sync | Not usable |
+| Anthropic | Claude Sonnet 4.5 | Sync |    good    | [Sonnet 4.5](#Sonnet-45)
+| Anthropic | Claude Sonnet 4.5 | Async | very good  | [Sonnet 4.5](#Sonnet-45)
+| Anthropic | Claude Opus 4.1   | Sync |    good    | [Opus 3.1](#Opus-41)
+| Anthropic | Claude Opus 4.1   | Async | very good  | [Opus 3.1](#Opus-41)
+| OpenAI    | ChatGPT 5         | Sync |  Adequate  | [ChatGPT 5](#ChatGPT-5)
+| OpenAI    | ChatGPT 5         | Async |  Adequate  | [ChatGPT 5](#ChatGPT-5)
+| OpenAI    | ChatGPT 4 | Sync | Not usable | [ChatGPT 4](#ChatGPT-4)
 | OpenAI    | CChatGPT 4 | Async | Not usable | [ChatGPT 4](#ChatGPT-4)
 
 ### Anthropic
