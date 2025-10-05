@@ -1,4 +1,4 @@
-__/Users/annegretjunkercodecentricag/IdeaProjects/AiCollections/AiComparison/Claude/Sonnet45CatalogManagement.oas.yaml__
+__../AiCollections/AiComparison/Claude/Sonnet45CatalogManagement.oas.yaml__
 
 17:9   warning  oas3-operation-security-defined  "catalog:read" must be listed among scopes.   security[0].openIdConnect[0]
 

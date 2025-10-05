@@ -1,4 +1,4 @@
-# AI Comaparison
+# AI Comparison
 
 This is path contains comparisons of generated APIs with different LLMs in different versions.
 The APIs are created based 
@@ -35,6 +35,8 @@ For the asynchronous communication the Visual Glossary needs to be enhanced by P
 ## Example
 
 As OpenAPI example a simple [Task Management API](./TaskManagement.yaml) is used.
+
+As AsyncAPI example the definition of an [Inventory Management](./InventoryManagement.aas.yaml) of an online library is used. It contains besides the event and schema definition the necessary Kafka bindings.
 
 ## Prompts
 
@@ -82,7 +84,27 @@ The linting shows no errors.
 The AsyncAPIs of Sonnet4.5 (left) and Opus4.1 (right) are almost identical.
 ![Comparison AsyncAPI Sonnet4.5 and Opus4.1](./Claude/ImageAasComparison.jpg)
 
-11
+### OpenAI
+
+#### ChatGPT 5
+
+[OpenAPI](./OpenAI/ChatGpt5CatalogManagement.oas.yaml), [Linting OpenAPI](./OpenAI/ChatGpt5Linting.oas.md), [Chat](https://chatgpt.com/share/68e26af7-4df0-800e-b4e8-6749a3ce586b)
+
+The result is good.
+The generator has not done a separation between event and synchronous API.
+The schema does not contain examples.
+Book is defined as schema, but is not used, because it is only used in events.
+Single type definition of every property increases complexity and makes the definition less human-readable.
+
+[AsyncAPI](./OpenAI/ChatGpt5CatalogMangement.aas.yaml), [Linting AsyncAPI](./OpenAI/ChatGpt5Linting.aas.md), [Chat](https://chatgpt.com/share/68e26c6d-aadc-800e-8173-27a5da6d247a)
+
+The result is good.
+The linting is not free of warnings.
+The generated code does not contain examples.
+Recognition of definitions which can be taken over is very good.
+Code comments are very good.
+
+
 
 
 

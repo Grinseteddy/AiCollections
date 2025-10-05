@@ -1,0 +1,296 @@
+asyncapi: 3.0.0
+info:
+  title: Catalog Management
+  version: 2025-1
+  description: |
+    Catalog Management consumes "Book Purchased" and produces catalog-entry lifecycle events.
+    - Receives: Book Purchased
+    - Sends: Catalog Entry Created, Catalog Entry Changed, Catalog Entry Deleted
+    Based on the Online Library event mesh conventions and schemas. :contentReference[oaicite:1]{index=1}
+  contact:
+    name: Annegret Junker
+    url: https://online-library.org/sample
+    email: annegret.junker@online-library.org
+  tags:
+    - name: Catalog Management
+      description: Events of the Catalog Management bounded context
+
+servers:
+  event-broker-library:
+    host: broker.online-library.org:8092
+    protocol: kafka
+    description: Event broker of the online library
+    security:
+      - $ref: '#/components/securitySchemes/user-password'
+    bindings:
+      kafka:
+        schemaRegistryUrl: 'https://online-library-schema-registry.com'
+        schemaRegistryVendor: 'confluent'
+        bindingVersion: '0.5.0'  # same binding version used system-wide :contentReference[oaicite:2]{index=2}
+
+defaultContentType: application/json
+
+channels:
+  BookPurchasedChannel:
+    description: Channel where messages are stored when a book was purchased
+    address: book-purchased
+    messages:
+      BookPurchasedEvent:
+        $ref: '#/components/messages/BookPurchasedReceive'
+    bindings:
+      kafka:
+        topic: 'book-purchased-event-channel'
+        bindingVersion: '0.5.0'  # aligns with purchase BC topic naming :contentReference[oaicite:3]{index=3}
+
+  CatalogEntryCreatedChannel:
+    description: Channel for newly created catalog entries
+    address: catalog-entry-created
+    messages:
+      CatalogEntryCreatedEvent:
+        $ref: '#/components/messages/CatalogEntryCreatedSend'
+    bindings:
+      kafka:
+        topic: 'catalog-entry-created'
+        bindingVersion: '0.5.0'
+
+  CatalogEntryChangedChannel:
+    description: Channel for updates to existing catalog entries
+    address: catalog-entry-changed
+    messages:
+      CatalogEntryChangedEvent:
+        $ref: '#/components/messages/CatalogEntryChangedSend'
+    bindings:
+      kafka:
+        topic: 'catalog-entry-changed'
+        bindingVersion: '0.5.0'
+
+  CatalogEntryDeletedChannel:
+    description: Channel for deletion of catalog entries
+    address: catalog-entry-deleted
+    messages:
+      CatalogEntryDeletedEvent:
+        $ref: '#/components/messages/CatalogEntryDeletedSend'
+    bindings:
+      kafka:
+        topic: 'catalog-entry-deleted'
+        bindingVersion: '0.5.0'
+
+operations:
+  BookPurchasedReceiveOperation:
+    description: Catalog Management receives a purchased book to create/augment a catalog entry.
+    action: receive
+    channel:
+      $ref: '#/channels/BookPurchasedChannel'
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-catalog-mgmt-book-purchased-.*$  # consumer group pattern for this BC
+
+  CatalogEntryCreatedSendOperation:
+    description: Emitted when a new catalog entry is created from a purchased book or manual creation.
+    action: send
+    channel:
+      $ref: '#/channels/CatalogEntryCreatedChannel'
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+
+  CatalogEntryChangedSendOperation:
+    description: Emitted when an existing catalog entry is modified (e.g., title, authors, tags, abstract).
+    action: send
+    channel:
+      $ref: '#/channels/CatalogEntryChangedChannel'
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+
+  CatalogEntryDeletedSendOperation:
+    description: Emitted when a catalog entry is deleted.
+    action: send
+    channel:
+      $ref: '#/channels/CatalogEntryDeletedChannel'
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+
+components:
+  messages:
+    BookPurchasedReceive:
+      name: BookPurchased
+      title: Book Purchased
+      summary: Event produced by Purchase; consumed by Catalog Management to create a catalog entry.
+      headers:
+        $ref: '#/components/schemas/MessageHeader'  # reused from inventory spec :contentReference[oaicite:4]{index=4}
+      payload:
+        $ref: '#/components/schemas/BookShort'      # reused; includes isbn13, authors, title, media, etc. :contentReference[oaicite:5]{index=5}
+      tags:
+        - name: Purchase
+
+    CatalogEntryCreatedSend:
+      name: CatalogEntryCreated
+      title: Catalog Entry Created
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/CatalogEntry'
+      tags:
+        - name: Catalog Management
+
+    CatalogEntryChangedSend:
+      name: CatalogEntryChanged
+      title: Catalog Entry Changed
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/CatalogEntry'
+      tags:
+        - name: Catalog Management
+
+    CatalogEntryDeletedSend:
+      name: CatalogEntryDeleted
+      title: Catalog Entry Deleted
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        type: object
+        required:
+          - catalogEntryId
+          - deletedAt
+        properties:
+          catalogEntryId:
+            type: string
+            format: uuid
+            description: Identifier of the deleted catalog entry.
+          deletedAt:
+            type: string
+            format: date-time
+            description: Timestamp when the entry was deleted.
+      tags:
+        - name: Catalog Management
+
+  schemas:
+    # ---- Reused (verbatim) from Inventory spec to ensure consistency across BCs ----
+    MessageHeader:  # shortened comment only; structure is identical to inventory spec
+      description: Header Information for each message
+      type: object
+      required: [correlationId, messageId, x-api-identifier, x-api-version]
+      properties:
+        correlationId: { type: string, format: uuid }
+        messageId: { type: string, format: uuid }
+        x-api-identifier: { type: string, format: uuid }
+        x-api-version:
+          type: string
+          x-extensible-enum: [1.0.0]
+        source:
+          type: string
+          minLength: 2
+          maxLength: 20
+    AuthorShort:
+      description: Author of a book
+      type: object
+      required: [authorId, givenName, familyName]
+      properties:
+        authorId: { type: string, format: uuid }
+        givenName: { type: string, minLength: 2, maxLength: 55 }
+        familyName: { type: string, minLength: 2, maxLength: 55 }
+    Editor:
+      description: Editor of a book
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 55 }
+        city: { type: string, minLength: 2, maxLength: 55 }
+    BookShort:
+      description: Book which was purchased by the librarians
+      type: object
+      required: [isbn13]
+      properties:
+        bookIdentifier: { type: string, format: uuid }
+        isbn13:
+          type: string
+          description: ISBN-13
+          pattern: ^(?:ISBN(?:-13)?:?\ )?(?=[0-9]{13}$|(?=(?:[0-9]+[-\ ]){4})[-\ 0-9]{17}$)97[89][-\ ]?[0-9]{1,5}[-\ ]?[0-9]+[-\ ]?[0-9]+[-\ ]?[0-9]$
+        authors:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: { $ref: '#/components/schemas/AuthorShort' }
+        areEditors:
+          type: boolean
+          default: false
+        editor:
+          $ref: '#/components/schemas/Editor'
+        title: { type: string, minLength: 2, maxLength: 255 }
+        subtitle: { type: string, minLength: 2, maxLength: 255 }
+        media: { type: string, format: uri }
+        format:
+          type: string
+          x-exensible-enum: [EPUB, KINDLE, PDF, BBEB, MOBI]
+          default: EPUB
+      x-note: Reused from Inventory Management spec for cross-BC consistency. :contentReference[oaicite:6]{index=6}
+
+    # ---- New for Catalog Management ----
+    CatalogEntry:
+      description: A catalog entry maintained by the Catalog Management BC.
+      type: object
+      required:
+        - catalogEntryId
+        - title
+        - isbn13
+        - createdAt
+        - updatedAt
+      properties:
+        catalogEntryId:
+          type: string
+          format: uuid
+          description: Unique identifier of the catalog entry.
+        title:
+          type: string
+          minLength: 2
+          maxLength: 255
+        authors:
+          type: array
+          description: One or more authors.
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/AuthorShort'
+        publisher:
+          type: string
+          minLength: 2
+          maxLength: 255
+        isbn13:
+          type: string
+          description: ISBN-13 of the work referenced by this entry.
+          pattern: ^(?:ISBN(?:-13)?:?\ )?(?=[0-9]{13}$|(?=(?:[0-9]+[-\ ]){4})[-\ 0-9]{17}$)97[89][-\ ]?[0-9]{1,5}[-\ ]?[0-9]+[-\ ]?[0-9]+[-\ ]?[0-9]$
+        publishedOn:
+          type: string
+          format: date
+          description: Publication date.
+        abstract:
+          type: string
+          maxLength: 4000
+          description: Optional abstract (0..1 in the glossary).
+        tags:
+          type: array
+          description: Zero or more recommendation tags.
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        media:
+          type: string
+          format: uri
+          description: Link to digital content, if available (derived from Book.digital content relation).
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    user-password:
+      type: userPassword
+      description: Security scheme for events (carried over from the shared mesh). :contentReference[oaicite:7]{index=7}
