@@ -49,6 +49,22 @@ The generated results are linted using the standard rule set by [Spectral](https
 
 ## Results
 
+### Overview
+
+The detail information can be found below in the descriptions of the result.
+The following table gives an overview in comparison of the different LLMs.
+
+| Provider  | Model             | Sync/Async |   Grade    | Details |
+|-----------|-------------------|------------|:----------:|---------|
+| Anthropic | Claude Sonnet 4.5 | Sync |    good    |[Sonnet 4.5](#Sonnet-4-5)
+| Anthropic | Claude Sonnet 4.5 | Async | very good  |
+| Anthropic | Claude Opus 4.1   | Sync |    good    |
+| Anthropic | Claude Opus 4.1   | Async | very good  |
+| OpenAI    | ChatGPT 5         | Sync |  Adequate  |
+| OpenAI    | ChatGPT 5         | Async |  Adequate  |
+| OpenAI    | ChatGPT 4 | Sync | Not usable |
+| OpenAI    | CChatGPT 4 | Async | Not usable |
+
 ### Anthropic
 
 #### Sonnet 4.5
