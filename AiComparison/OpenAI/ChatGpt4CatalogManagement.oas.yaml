@@ -1,0 +1,394 @@
+openapi: 3.1.0
+info:
+  title: Catalog Management API
+  description: API for managing catalog entries and tagging books for recommendations.
+  version: 2025-1
+  contact:
+    name: Annegret Junker
+  x-api-id: catalog-management-api-2025-1
+  x-audience: internal-library
+
+servers:
+  - url: https://apis.online-library.org/catalog-management
+
+tags:
+  - name: Catalog Entries
+    description: Operations on catalog entries
+
+paths:
+  /catalog-entries:
+    get:
+      summary: List all catalog entries
+      operationId: getCatalogEntries
+      tags: [Catalog Entries]
+      parameters:
+        - $ref: '#/components/parameters/SearchParameter'
+        - $ref: '#/components/parameters/VersionHeader'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      summary: Create a new catalog entry
+      operationId: createCatalogEntry
+      tags: [Catalog Entries]
+      parameters:
+        - $ref: '#/components/parameters/VersionHeader'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/CatalogEntryCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /catalog-entries/{catalogEntryId}:
+    get:
+      summary: Retrieve a catalog entry by ID
+      operationId: getCatalogEntryById
+      tags: [Catalog Entries]
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdPath'
+        - $ref: '#/components/parameters/VersionHeader'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Update a catalog entry
+      operationId: updateCatalogEntry
+      tags: [Catalog Entries]
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdPath'
+        - $ref: '#/components/parameters/VersionHeader'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete a catalog entry
+      operationId: deleteCatalogEntry
+      tags: [Catalog Entries]
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdPath'
+        - $ref: '#/components/parameters/VersionHeader'
+      responses:
+        '204':
+          description: Successfully deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /catalog-entries/{catalogEntryId}/abstracts:
+    put:
+      summary: Update abstract of a catalog entry
+      operationId: updateCatalogEntryAbstract
+      tags: [Catalog Entries]
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdPath'
+        - $ref: '#/components/parameters/VersionHeader'
+      requestBody:
+        $ref: '#/components/requestBodies/AbstractUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /catalog-entries/{catalogEntryId}/tags:
+    put:
+      summary: Update tags of a catalog entry
+      operationId: updateCatalogEntryTags
+      tags: [Catalog Entries]
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdPath'
+        - $ref: '#/components/parameters/VersionHeader'
+      requestBody:
+        $ref: '#/components/requestBodies/TagsUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  parameters:
+    CatalogEntryIdPath:
+      name: catalogEntryId
+      in: path
+      required: true
+      description: Unique identifier of the catalog entry
+      schema:
+        type: string
+        format: uuid
+
+    VersionHeader:
+      name: x-version
+      in: header
+      required: true
+      description: API version header
+      schema:
+        type: string
+        default: "2025-1"
+        enum: ["2025-1"]
+
+    SearchParameter:
+      name: search
+      in: query
+      required: false
+      description: Filter catalog entries by keyword
+      schema:
+        type: string
+
+  schemas:
+    CatalogEntry:
+      type: object
+      required:
+        - id
+        - title
+        - author
+        - publisher
+        - isbn
+        - publishedOn
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        author:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        publisher:
+          type: string
+        isbn:
+          type: string
+        publishedOn:
+          type: string
+          format: date
+        abstract:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CatalogEntryCreate:
+      type: object
+      required:
+        - title
+        - author
+        - publisher
+        - isbn
+        - publishedOn
+      properties:
+        title:
+          type: string
+        author:
+          type: array
+          items:
+            type: string
+        publisher:
+          type: string
+        isbn:
+          type: string
+        publishedOn:
+          type: string
+          format: date
+        abstract:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    CatalogEntryUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        author:
+          type: array
+          items:
+            type: string
+        publisher:
+          type: string
+        isbn:
+          type: string
+        publishedOn:
+          type: string
+          format: date
+        abstract:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    AbstractUpdate:
+      type: object
+      required:
+        - abstract
+      properties:
+        abstract:
+          type: string
+
+    TagsUpdate:
+      type: object
+      required:
+        - tags
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  requestBodies:
+    CatalogEntryCreateRequest:
+      description: Catalog entry creation request body
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryCreate'
+
+    CatalogEntryUpdateRequest:
+      description: Catalog entry update request body
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryUpdate'
+
+    AbstractUpdateRequest:
+      description: Catalog entry abstract update request body
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AbstractUpdate'
+
+    TagsUpdateRequest:
+      description: Catalog entry tags update request body
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TagsUpdate'
+
+  responses:
+    CatalogEntryResponse:
+      description: Single catalog entry response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryListResponse:
+      description: List of catalog entries
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryCreatedResponse:
+      description: Catalog entry created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    BadRequest:
+      description: Bad request due to invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Forbidden due to missing rights
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Catalog entry not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalError:
+      description: Unexpected internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

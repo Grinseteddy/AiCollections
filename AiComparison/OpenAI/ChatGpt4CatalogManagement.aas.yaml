@@ -1,0 +1,177 @@
+asyncapi: 3.0.0
+info:
+  title: Catalog Management
+  version: 2025-1
+  description: |
+    Catalog Management handles catalog entry lifecycle events and consumes book purchase events.
+    Events include creation, update, and deletion of catalog entries.
+  contact:
+    name: Annegret Junker
+    url: https://apis.online-library.org/catalog-management
+    email: annegret.junker@online-library.org
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  tags:
+    - name: Catalog Management
+      description: Events related to managing catalog entries
+
+servers:
+  kafka-broker:
+    host: broker.online-library.org:8092
+    protocol: kafka
+    description: Kafka broker for event-driven catalog management
+    bindings:
+      kafka:
+        schemaRegistryUrl: 'https://online-library-schema-registry.com'
+        schemaRegistryVendor: 'confluent'
+        bindingVersion: '0.5.0'
+
+channels:
+  book-purchased:
+    description: Event triggered when a book is purchased
+    address: book-purchased
+    messages:
+      bookPurchased:
+        $ref: '#/components/messages/BookPurchased'
+    bindings:
+      kafka:
+        topic: 'book-purchased-event-channel'
+        bindingVersion: '0.5.0'
+
+  catalog-entry-created:
+    description: Event triggered when a catalog entry is created
+    address: catalog-entry-created
+    messages:
+      catalogEntryCreated:
+        $ref: '#/components/messages/CatalogEntryEvent'
+    bindings:
+      kafka:
+        topic: 'catalog-entry-created-event-channel'
+        bindingVersion: '0.5.0'
+
+  catalog-entry-changed:
+    description: Event triggered when a catalog entry is changed
+    address: catalog-entry-changed
+    messages:
+      catalogEntryChanged:
+        $ref: '#/components/messages/CatalogEntryEvent'
+    bindings:
+      kafka:
+        topic: 'catalog-entry-changed-event-channel'
+        bindingVersion: '0.5.0'
+
+  catalog-entry-deleted:
+    description: Event triggered when a catalog entry is deleted
+    address: catalog-entry-deleted
+    messages:
+      catalogEntryDeleted:
+        $ref: '#/components/messages/CatalogEntryEvent'
+    bindings:
+      kafka:
+        topic: 'catalog-entry-deleted-event-channel'
+        bindingVersion: '0.5.0'
+
+operations:
+  receiveBookPurchased:
+    action: receive
+    channel:
+      $ref: '#/channels/book-purchased'
+    summary: Book purchased event is received
+
+  sendCatalogEntryCreated:
+    action: send
+    channel:
+      $ref: '#/channels/catalog-entry-created'
+    summary: Catalog entry created event is sent
+
+  sendCatalogEntryChanged:
+    action: send
+    channel:
+      $ref: '#/channels/catalog-entry-changed'
+    summary: Catalog entry changed event is sent
+
+  sendCatalogEntryDeleted:
+    action: send
+    channel:
+      $ref: '#/channels/catalog-entry-deleted'
+    summary: Catalog entry deleted event is sent
+
+components:
+  messages:
+    BookPurchased:
+      name: BookPurchased
+      title: Book Purchased Event
+      summary: Indicates that a book has been purchased
+      payload:
+        $ref: '#/components/schemas/Book'
+
+    CatalogEntryEvent:
+      name: CatalogEntryEvent
+      title: Catalog Entry Event
+      summary: Represents creation, change, or deletion of a catalog entry
+      payload:
+        $ref: '#/components/schemas/CatalogEntry'
+
+  schemas:
+    Book:
+      type: object
+      required:
+        - bookId
+        - digitalContent
+      properties:
+        bookId:
+          type: string
+          format: uuid
+          description: Unique identifier for the book
+        digitalContent:
+          type: string
+          format: uri
+          description: URI to the digital content of the book
+
+    CatalogEntry:
+      type: object
+      required:
+        - catalogEntryId
+        - title
+        - authors
+        - publisher
+        - isbn
+        - publishedOn
+      properties:
+        catalogEntryId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        authors:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [name, givenName]
+            properties:
+              name:
+                type: string
+              givenName:
+                type: string
+        publisher:
+          type: string
+        isbn:
+          type: string
+        publishedOn:
+          type: string
+          format: date
+        abstract:
+          type: string
+          maxLength: 1000
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

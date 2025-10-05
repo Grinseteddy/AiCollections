@@ -90,19 +90,52 @@ The AsyncAPIs of Sonnet4.5 (left) and Opus4.1 (right) are almost identical.
 
 [OpenAPI](./OpenAI/ChatGpt5CatalogManagement.oas.yaml), [Linting OpenAPI](./OpenAI/ChatGpt5Linting.oas.md), [Chat](https://chatgpt.com/share/68e26af7-4df0-800e-b4e8-6749a3ce586b)
 
-The result is good.
+The result is medium.
 The generator has not done a separation between event and synchronous API.
-The schema does not contain examples.
+The schema does not contain examples nor descriptions.
 Book is defined as schema, but is not used, because it is only used in events.
 Single type definition of every property increases complexity and makes the definition less human-readable.
 
-[AsyncAPI](./OpenAI/ChatGpt5CatalogMangement.aas.yaml), [Linting AsyncAPI](./OpenAI/ChatGpt5Linting.aas.md), [Chat](https://chatgpt.com/share/68e26c6d-aadc-800e-8173-27a5da6d247a)
+[AsyncAPI](./OpenAI/ChatGpt5CatalogManagement.aas.yaml), [Linting AsyncAPI](./OpenAI/ChatGpt5Linting.aas.md), [Chat](https://chatgpt.com/share/68e26c6d-aadc-800e-8173-27a5da6d247a)
 
-The result is good.
+The result is medium.
 The linting is not free of warnings.
-The generated code does not contain examples.
+The generated code does not contain examples nor descriptions.
 Recognition of definitions which can be taken over is very good.
 Code comments are very good.
+
+### ChatGPT 4
+
+[OpenAPI](./OpenAI/ChatGpt4CatalogManagement.oas.yaml), [Linting OpenAPI](./OpenAI/ChatGpt4Linting.oas.md), [Chat](https://chatgpt.com/share/68e275ad-c8e8-800e-a065-5cac4c55b701)
+
+The chat takes a while and several prompts until the result could be reached.
+
+The info block defines events in an extensible tag, which is not necessary.
+Not all required response codes are defined.
+
+The result could be usable, but needs a lot of rework.
+The linting contains warnings.
+There are neither descriptions nor examples.
+The security scopes are left out.
+Strings do not contain formatting information.
+
+[AsyncAPI](./OpenAI/ChatGpt4CatalogManagement.aas.yaml), [Linting AsyncAPI](./OpenAI/ChatGpt4Linting.aas.md), [Chat](https://chatgpt.com/share/68e27881-07b8-800e-86aa-500600f5c960)
+
+The chat needs two prompts.
+
+The result is not usable.
+
+Not all required response codes are defined.
+
+Descriptions and examples are missing.
+The schema formulation needs a lot of rework.
+Book is not seen as source of the catalog entry values.
+
+Even though ChatGPT 5 is difficult to use for API generation, there are principle differences between ChatGPT5 and 4.
+
+![Comparison ChatGPT 5 (left) and ChatGPT 4 (right)](./OpenAI/ImageOasComparison.jpg)
+
+
 
 
 
