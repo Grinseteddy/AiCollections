@@ -54,16 +54,18 @@ The generated results are linted using the standard rule set by [Spectral](https
 The detail information can be found below in the descriptions of the result.
 The following table gives an overview in comparison of the different LLMs.
 
-| Provider  | Model             | Sync/Async |   Grade    | Details |
-|-----------|-------------------|------------|:----------:|---------|
-| Anthropic | Claude Sonnet 4.5 | Sync |    good    | [Sonnet 4.5](#Sonnet-45)
-| Anthropic | Claude Sonnet 4.5 | Async | very good  | [Sonnet 4.5](#Sonnet-45)
-| Anthropic | Claude Opus 4.1   | Sync |    good    | [Opus 3.1](#Opus-41)
-| Anthropic | Claude Opus 4.1   | Async | very good  | [Opus 3.1](#Opus-41)
-| OpenAI    | ChatGPT 5         | Sync |  Adequate  | [ChatGPT 5](#ChatGPT-5)
-| OpenAI    | ChatGPT 5         | Async |  Adequate  | [ChatGPT 5](#ChatGPT-5)
+| Provider  | Model            | Sync/Async |   Grade    | Details |
+|-----------|------------------|------------|:----------:|---------|
+| Anthropic | Claude Sonnet 4.5 | Sync |    Good    | [Sonnet 4.5](#Sonnet-45)
+| Anthropic | Claude Sonnet 4.5 | Async | Very good  | [Sonnet 4.5](#Sonnet-45)
+| Anthropic | Claude Opus 4.1  | Sync |    Good    | [Opus 3.1](#Opus-41)
+| Anthropic | Claude Opus 4.1  | Async | Very good  | [Opus 3.1](#Opus-41)
+| OpenAI    | ChatGPT 5        | Sync |  Adequate  | [ChatGPT 5](#ChatGPT-5)
+| OpenAI    | ChatGPT 5        | Async |  Adequate  | [ChatGPT 5](#ChatGPT-5)
 | OpenAI    | ChatGPT 4 | Sync | Not usable | [ChatGPT 4](#ChatGPT-4)
-| OpenAI    | CChatGPT 4 | Async | Not usable | [ChatGPT 4](#ChatGPT-4)
+| OpenAI    | ChatGPT 4 | Async | Not usable | [ChatGPT 4](#ChatGPT-4)
+| Google | Gemini 2.5 Flash | Sync | Good | [Gemini 2.5 Flash](#Gemini-25-Flash)
+| Google | Gemini 2.5 Flash | Async | Adequate | [Gemini 2.5 Flash](#Gemini-25-Flash)
 
 ### Anthropic
 
@@ -120,7 +122,7 @@ The generated code does not contain examples nor descriptions.
 Recognition of definitions which can be taken over is very good.
 Code comments are very good.
 
-### ChatGPT 4
+#### ChatGPT 4
 
 [OpenAPI](./OpenAI/ChatGpt4CatalogManagement.oas.yaml), [Linting OpenAPI](./OpenAI/ChatGpt4Linting.oas.md), [Chat](https://chatgpt.com/share/68e275ad-c8e8-800e-a065-5cac4c55b701)
 
@@ -150,6 +152,32 @@ Book is not seen as source of the catalog entry values.
 Even though ChatGPT 5 is difficult to use for API generation, there are principle differences between ChatGPT5 and 4.
 
 ![Comparison ChatGPT 5 (left) and ChatGPT 4 (right)](./OpenAI/ImageOasComparison.jpg)
+
+### Gemini 2.5 Flash
+
+[OpenAPI](./Gemini/Gemini25FlashCatalogManagement.oas.yaml), [Linting OpenAPI](./Gemini/Gemini25FlashCatalogManagement.oas.yaml), [Chat](https://docs.google.com/document/d/1BPaDJpmxkPXFGP4ZANrPTTlO6CEPm40ifkf-iDDaVYE/edit?usp=sharing)
+
+The generated API is useful and good.
+Examples are missing.
+
+A comparison between Gemini 2.5 Flash (left) and Claude Sonnet 4.5 (right) shows that the generation with Claude is cleaner.
+
+![Comparison OpenAPI between Gemini and Claude](./Gemini/ImageComparisonOpenApi.jpg)
+
+[AsyncAPI](./Gemini/Gemini25FlashCatalogManagement.aas.yaml), [Linting AsyncAPI](./Gemini/Gemini25FlashLinting.aas.md), [Chat](https://docs.google.com/document/d/18YOZhxLlakNBLiq7_5EDWQ5Sbknn2c7NGoHW1kHIc_Q/edit?usp=sharing)
+
+Syntactically, the AsyncAPI is not bad.
+However, the *Book Purchased* event is missing.
+It would need to be added manually.
+In the schema, examples are missing.
+
+
+
+
+
+
+
+
 
 
 
