@@ -3,6 +3,9 @@ info:
   title: Task Management API
   description: API for managing tasks between freelancers and assignees
   version: 1.0.0
+  contact:
+    name: Annegret Junker
+    email: annegret.junker@gmx.de
   x-api-id: 8f3d9b2e-7c5f-4e21-aa41-826f8eaf4092
   x-audience: external-public
 
@@ -13,7 +16,6 @@ security:
   - openIdConnect:
       - tasks:read
       - tasks:write
-      - tasks:admin
 
 tags:
   - name: Tasks
@@ -26,6 +28,7 @@ tags:
 paths:
   /tasks:
     get:
+      description: Responses with a list of tasks fulfilling the search parameter
       operationId: getTasksByFilter
       tags:
         - Tasks
@@ -48,6 +51,7 @@ paths:
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
     post:
+      description: Creates a new task
       operationId: createTask
       tags:
         - Tasks
@@ -68,7 +72,11 @@ paths:
 
   /tasks/{taskId}:
     get:
+      description: Responses with a task identified by its ID
       operationId: getTaskById
+      security:
+        - OpenIdConnect:
+            - tasks:read
       tags:
         - Tasks
       parameters:
@@ -80,7 +88,11 @@ paths:
           $ref: '#/components/responses/NotFoundResponse'
 
     put:
+      description: Updates a task with the given task in the body
       operationId: updateTaskStatus
+      security:
+        - OpenIdConnect:
+            - tasks:read
       tags:
         - Tasks
       parameters:
@@ -286,6 +298,7 @@ components:
 
   securitySchemes:
     openIdConnect:
+      description: Access to task management via OpenIDConnect
       type: openIdConnect
       openIdConnectUrl: https://auth.taskmanagement.com/.well-known/openid-configuration
-  
+

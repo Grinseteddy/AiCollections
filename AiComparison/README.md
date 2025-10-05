@@ -28,4 +28,39 @@ The belonging Visual Glossary shows the domain model of the bounded context with
 
 ![Visual Glossary Catalog Management](Junker_AIandDDD_VisualGlossary.jpg)
 
-## Rule Set
+## Example
+
+As OpenAPI example a simple [Task Management API](./TaskManagement.yaml) is used.
+
+## Prompts
+
+The prompt for the OpenAPI Generation: [Prompt](PromptOpenApi).
+
+## Linting
+
+The generated results are linted using the standard rule set by [Spectral].(https://docs.stoplight.io/docs/spectral/aa15cdee143a1-java-script-ruleset-format).
+
+## Results
+ 
+
+### Anthropic
+
+#### Sonnet 4.5
+
+[OpenAPI](./Claude/Sonnet45CatalogManagement.oas.yaml),
+[Linting OpenAPI](./Claude/Sonnet45Linting.md), [Chat](https://claude.ai/share/85a0b43e-6ca0-4c51-92a9-df5b8601509f)
+
+The result is good and satisfying.
+Examples in the schemas are missing.
+
+#### Opus 4.1
+
+[OpenAPI](./Claude/Opus41CatalogManagement.oas.yaml), [Linting OpenAPI](./Claude/Opus41Linting.md), [Chat](https://claude.ai/share/d262fcf6-6097-4523-a90b-63c4a9393596)
+
+The result is good.
+The generator has not done a separation between event and synchronous API. 
+Book is defined as schema, but is not used, because it is only used in events.
+
+
+
+
