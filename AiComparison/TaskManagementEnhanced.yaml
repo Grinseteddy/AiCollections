@@ -1,0 +1,404 @@
+openapi: 3.1.0
+info:
+  title: Task Management API
+  description: API for managing tasks between freelancers and assignees
+  version: 1.0.0
+  contact:
+    name: Annegret Junker
+    email: annegret.junker@gmx.de
+  x-api-id: 8f3d9b2e-7c5f-4e21-aa41-826f8eaf4092
+  x-audience: external-public
+
+servers:
+  - url: 'https://api.taskmanagement.com/v1'
+
+security:
+  - openIdConnect:
+      - tasks:read
+      - tasks:write
+
+tags:
+  - name: Tasks
+    description: Task management operations
+  - name: Invoices
+    description: Invoice management operations
+  - name: Users
+    description: User management operations
+
+paths:
+  /tasks:
+    get:
+      description: Responses with a list of tasks fulfilling the search parameter
+      operationId: getTasksByFilter
+      tags:
+        - Tasks
+      security:
+        - openIdConnect:
+            - tasks:read
+      parameters:
+        - $ref: '#/components/parameters/StatusParameter'
+        - $ref: '#/components/parameters/AssigneeParameter'
+        - $ref: '#/components/parameters/CreatorParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    post:
+      description: Creates a new task
+      operationId: createTask
+      tags:
+        - Tasks
+      security:
+        - openIdConnect:
+            - tasks:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/TaskCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/TaskCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /tasks/{taskId}:
+    get:
+      description: Responses with a task identified by its ID
+      operationId: getTaskById
+      security:
+        - openIdConnect:
+            - tasks:read
+      tags:
+        - Tasks
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/TaskIdParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    put:
+      description: Updates a task with the given task in the body
+      operationId: updateTaskStatus
+      security:
+        - openIdConnect:
+            - tasks:read
+      tags:
+        - Tasks
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/TaskIdParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/TaskUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+components:
+  parameters:
+    TaskIdParameter:
+      description: Path parameter to identify a task uniquely
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 3114e925-6fa4-4805-ae11-4e7b810066e3
+
+    StatusParameter:
+      description: Parameter to filter a task by its status
+      name: status
+      in: query
+      schema:
+        $ref: '#/components/schemas/TaskStatus'
+
+    AssigneeParameter:
+      description: Parameter to find a task by its assignee
+      name: assigneeId
+      in: query
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - aeda7f29-2a29-4d54-9e30-54e71bec3a2b
+
+    CreatorParameter:
+      description: Parameter to filter a task by its creator
+      name: creatorId
+      in: query
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - 8257ae2c-7ef3-45a5-87cb-30a2820ad232
+
+    VersionParameter:
+      description: Version of the expected API specification version by the client
+      name: x-api-version
+      in: header
+      required: true
+      schema:
+        type: string
+        default: "1.0.0"
+        x-extensible-enum: ["1.0.0"]
+
+  requestBodies:
+    TaskCreateRequest:
+      description: Task creation request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TaskToBeCreated'
+
+    TaskUpdateRequest:
+      description: Task update request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Task'
+
+  responses:
+    TaskResponse:
+      description: Single task response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Task'
+
+    TaskListResponse:
+      description: List of tasks
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TaskList'
+
+    TaskCreatedResponse:
+      description: Task created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TaskLink'
+
+    BadRequestResponse:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFoundResponse:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: Access forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServiceNotAvailableResponse:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    DefaultResponse:
+      description: General error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Task:
+      description: A task to be done by the assigned
+      type: object
+      required:
+        - id
+        - status
+      allOf:
+        - $ref: '#/components/schemas/TaskToBeCreated'
+        - properties:
+            id:
+              description: Identifier of the task
+              type: string
+              format: uuid
+              examples:
+                - 3114e925-6fa4-4805-ae11-4e7b810066e3
+            status:
+              $ref: '#/components/schemas/TaskStatus'
+            assigneeId:
+              description: Identifier of the person who is assigned to the task
+              type: string
+              format: uuid
+              examples:
+                - aeda7f29-2a29-4d54-9e30-54e71bec3a2b
+            createdAt:
+              description: Date and time when the task was created
+              type: string
+              format: date-time
+              examples:
+                - 2025-10-06T13:24Z
+            updatedAt:
+              description: Date and time when task was updated
+              type: string
+              format: date-time
+              examples:
+                - 2025-10-06T13:24Z
+
+    TaskStatus:
+      description: Status of a task
+      type: string
+      x-extensible-enum:
+        - NEW
+        - IN_PROGRESS
+        - DONE
+      default: NEW
+      examples:
+        - NEW
+
+    TaskToBeCreated:
+      description: Task to be created in Task Management
+      type: object
+      required:
+        - title
+        - creatorId
+      properties:
+        title:
+          description: Title of the task
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples:
+            - Do something
+        description:
+          description: Description of the task
+          type: string
+          maxLength: 2000
+          examples:
+            - Do something useful
+        creatorId:
+          description: Identifier of the person who created the task
+          type: string
+          format: uuid
+          examples:
+            - 8257ae2c-7ef3-45a5-87cb-30a2820ad232
+
+    TaskList:
+      description: List of tasks as response object
+      type: object
+      required:
+        - taskList
+      properties:
+        taskList:
+          description: List of tasks
+          type: array
+          minItems: 0
+          maxItems: 1023
+          items:
+            $ref: '#/components/schemas/Task'
+
+
+    TaskLink:
+      description: Link to a task
+      type: object
+      required:
+        - taskLink
+      properties:
+        taskLink:
+          description: Link to a task in Task Management
+          type: string
+          format: uri
+          examples:
+            - https:apis-online-library/task-management/tasks/3114e925-6fa4-4805-ae11-4e7b810066e3
+
+    Error:
+      description: Standard error object
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          description: Short code of teh Error to be recognized easily
+          type: string
+          minLength: 2
+          maxLength: 10
+          examples:
+            - TASK-001
+        title:
+          description: Message of the error for better description
+          type: string
+          minLength: 2
+          maxLength: 256
+          examples:
+            - Task 123 cannot be found.
+        detail:
+          description: Link to the object handled in the error
+          type: string
+          format: uri
+          examples:
+            - https:apis-online-library/task-management/tasks/3114e925-6fa4-4805-ae11-4e7b810066e3
+        severity:
+          description: Severity of the error
+          type: string
+          x-extensible-enum:
+            - FATAL
+            - ERROR
+            - WARNING
+            - INFO
+          default:
+            - ERROR
+          examples:
+            - ERROR
+        timestamp:
+          description: Timestamp when the error occurs
+          type: string
+          format: date-time
+          examples:
+            - 2025-10-03T23:04:24Z
+
+  securitySchemes:
+    openIdConnect:
+      description: Access to task management via OpenIDConnect
+      type: openIdConnect
+      openIdConnectUrl: https://auth.taskmanagement.com/.well-known/openid-configuration
+

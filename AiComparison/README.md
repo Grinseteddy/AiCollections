@@ -56,6 +56,8 @@ For the asynchronous communication the Visual Glossary needs to be enhanced by P
 ## Examples
 
 As OpenAPI example a simple [Task Management API](./TaskManagement.yaml) is used.
+The usage of a more sophisticated examples creates much better results. Therefore, [Task Management Enhanced](./TaskManagementEnhanced.yaml) was used to show the influence of a well-structured examples.
+Even more those enhanced examples are linted with a more sophisticated ruleset (see [Linting](#linting)).
 
 As AsyncAPI example the definition of an [Inventory Management](./InventoryManagement.aas.yaml) of an online library is used. It contains besides the event and schema definition the necessary Kafka bindings.
 
@@ -68,6 +70,7 @@ As AsyncAPI example the definition of an [Inventory Management](./InventoryManag
 
 The generated results are linted using the standard rule set by [Spectral](https://docs.stoplight.io/docs/spectral/aa15cdee143a1-java-script-ruleset-format).
 
+
 ## Results
 
 ### Anthropic
@@ -79,6 +82,12 @@ The generated results are linted using the standard rule set by [Spectral](https
 
 The result is good and satisfying.
 Examples in the schemas are missing.
+
+[OpenAPI Enhanced](./Claude/Sonnet45CatalogManagementEnhanced.oas.yaml), [Chat](https://claude.ai/share/fda1d647-da26-49f4-bb2d-defe85a408c0)
+
+The result is more satisfying and much better.
+Examples are given.
+Polymorphism is not used.
 
 [AsyncAPI](./Claude/Sonnet45CatalogManagement.aas.yaml),
 [Linting AsyncAPI](./Claude/Sonnet45Linting.aas.md),
