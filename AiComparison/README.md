@@ -3,10 +3,31 @@
 This is path contains comparisons of generated APIs with different LLMs in different versions.
 The APIs are created based 
 - on a picture of an API Product Canvas _(see Junker, A; Lazzaretti, F. (2025) Crafting Great APIs using DDD, Apress)_,
-- a Visual Glossary _(see Zörner, S. (2015). Softwarearchitekturen dokumentieren und kommunizieren, Entwürfe, Entscheidungen und Lösungen nachvollziehbar und wirkungsvoll festhalten (Document and Communicate Software Architectures: Traceable and Effective Capturing of Decisions and Solutions). München: Hanser Verlag.)_
+- a Visual Glossary _(see Zörner, S. (2015). Softwarearchitekturen dokumentieren und kommunizieren, Entwürfe, Entscheidungen und Lösungen nachvollziehbar und wirkungsvoll festhalten (Document and Communicate Software Architectures: Traceable and Effective Capturing of Decisions and Solutions). München: Hanser Verlag.)_, and
 - an example in OpenAPI and AsyncAPI.
 
-The generated APIs are linted with the [Spectral](https://docs.stoplight.io/docs/spectral/674b27b261c3c-overview) linter and custom rules.
+The generated APIs are linted with the [Spectral](https://docs.stoplight.io/docs/spectral/674b27b261c3c-overview) linter and standard rules.
+
+## Overview
+
+| Grade     | Provider  | Model             | Sync/Async | Details                              |
+|-----------|-----------|-------------------|------------|--------------------------------------|
+| Excellent | Anthropic | Claude Sonnet 4.5 | Async      | [Sonnet 4.5](#Sonnet-45)             |
+| Excellent | Anthropic | Claude Opus 4.1   | Async      | [Opus 3.1](#Opus-41)                 |
+| Very Good | Anthropic | Claude Sonnet 4.5 | Sync       | [Sonnet 4.5](#Sonnet-45)             |                        
+| Very Good | Anthropic | Claude Opus 4.1   | Sync       | [Opus 3.1](#Opus-41)                 |               
+| Very Good | Google    | Gemini 2.5 Pro    | Sync       | [Gemini 2.5 Pro](#Gemini-25-Pro)     |
+| Very Good | Google    | Gemini 2.5 Pro    | Async      | [Gemini 2.5 Pro](#Gemini-25-Pro)     |
+| Very Good | Google    | Gemini 2.5 Flash  | Sync       | [Gemini 2.5 Flash](#Gemini-25-Flash) |
+| Good      | OpenAI    | ChatGPT 5         | Sync       | [ChatGPT 5](#ChatGPT-5)              |            
+| Good      | OpenAI    | ChatGPT 5         | Async      | [ChatGPT 5](#ChatGPT-5)              |
+| Good      | Google    | Gemini 2.5 Flash  | Async      | [Gemini 2.5 Flash](#Gemini-25-Flash) |
+| Fair      | OpenAI    | ChatGPT 4         | Sync       | [ChatGPT 4](#ChatGPT-4)              |
+| Fair      | Microsoft | Copilot           | Sync       | [Copilot](#Microsoft-Copilot)        |
+| Poor      | OpenAI    | ChatGPT 4         | Async      | [ChatGPT 4](#ChatGPT-4)              |
+| Poor      | Microsoft | Copilot           | Async      | [Copilot](#Microsoft-Copilot)        |      
+
+The detail information can be found below in the descriptions of the result.
 
 ## Scenario
 
@@ -32,7 +53,7 @@ For the asynchronous communication the Visual Glossary needs to be enhanced by P
 
 ![Enhanced Visual Glossary](./Junker_AIandDDD-Visual_Glossary_with_Book.jpg)
 
-## Example
+## Examples
 
 As OpenAPI example a simple [Task Management API](./TaskManagement.yaml) is used.
 
@@ -48,26 +69,6 @@ As AsyncAPI example the definition of an [Inventory Management](./InventoryManag
 The generated results are linted using the standard rule set by [Spectral](https://docs.stoplight.io/docs/spectral/aa15cdee143a1-java-script-ruleset-format).
 
 ## Results
-
-### Overview
-
-The detail information can be found below in the descriptions of the result.
-The following table gives an overview in comparison of the different LLMs.
-
-| Provider  | Model            | Sync/Async |   Grade    | Details |
-|-----------|------------------|------------|:----------:|---------|
-| Anthropic | Claude Sonnet 4.5 | Sync |    Good    | [Sonnet 4.5](#Sonnet-45)
-| Anthropic | Claude Sonnet 4.5 | Async | Very good  | [Sonnet 4.5](#Sonnet-45)
-| Anthropic | Claude Opus 4.1  | Sync |    Good    | [Opus 3.1](#Opus-41)
-| Anthropic | Claude Opus 4.1  | Async | Very good  | [Opus 3.1](#Opus-41)
-| OpenAI    | ChatGPT 5        | Sync |  Adequate  | [ChatGPT 5](#ChatGPT-5)
-| OpenAI    | ChatGPT 5        | Async |  Adequate  | [ChatGPT 5](#ChatGPT-5)
-| OpenAI    | ChatGPT 4 | Sync | Not usable | [ChatGPT 4](#ChatGPT-4)
-| OpenAI    | ChatGPT 4 | Async | Not usable | [ChatGPT 4](#ChatGPT-4)
-| Google | Gemini 2.5 Pro | Sync | Good | [Gemini 2.5 Pro](#Gemini-25-Pro)
-| Google | Gemini 2.5 Pro | Sync | Good | [Gemini 2.5 Pro](#Gemini-25-Pro)
-| Google | Gemini 2.5 Flash | Sync | Good | [Gemini 2.5 Flash](#Gemini-25-Flash)
-| Google | Gemini 2.5 Flash | Async | Adequate | [Gemini 2.5 Flash](#Gemini-25-Flash)
 
 ### Anthropic
 
@@ -190,6 +191,27 @@ Syntactically, the AsyncAPI is not bad.
 However, the *Book Purchased* event is missing.
 It would need to be added manually.
 In the schema, examples are missing.
+
+### Microsoft Copilot
+
+[OpenAPI](./Copilot/CopilotCatalogManagement.oas.yaml), [Linting OpenAPI](./Copilot/CopilotLinting.oas.md), [Chat](https://copilot.microsoft.com/shares/EZawTkjaHhbyTAGJMD2n6)
+
+The API specification is hardly useful.
+For the generation the example specification cannot be uploaded. It must be copied and pasted into the prompt.
+Descriptions and examples are missing.
+Strings do not have either minLength/maxlength nor patterns.
+For the identifier no format as uuid is given.
+
+[AsyncAPI](./Copilot/CopilotCatalogManagement.aas.yaml), [Linting AsyncAPI](./Copilot/CopilotLinting.aas.md), [Chat](https://copilot.microsoft.com/shares/exDgvjTQfMJoZc3ADdJvq)
+
+The API specification is not useful.
+For the generation the example specification cannot be uploaded. It must be copied and pasted into the prompt.
+The API specification contains syntactical errors.
+The schema definition is not satisfying and misses descriptions and examples.
+Schema examples are defined as separated property. 
+
+
+
 
 
 

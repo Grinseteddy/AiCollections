@@ -1,0 +1,582 @@
+openapi: 3.1.0
+info:
+  title: Catalog Management API
+  description: API for librarians to manage catalog entries and for users to search catalogs and receive recommendations.
+  version: "2025-1"
+  contact:
+    name: Annegret Junker
+    email: annegret.junker@gmx.de
+  x-value-propositions:
+    - Allows librarians to manage catalog entries
+    - Allows users to find books and get recommendations
+  x-sync-protocol: HTTP
+  x-architecture-pattern: RESTful oriented
+
+servers:
+  - url: https://apis.online-library.org/catalog-management
+
+tags:
+  - name: Catalogs
+    description: Catalog collection operations
+  - name: CatalogEntries
+    description: Catalog entry operations
+  - name: Events
+    description: Event notifications (described as Kafka event model in x-extensions)
+
+paths:
+  /catalogs:
+    get:
+      summary: Search catalogs
+      description: Returns a list of catalogs matching query parameters.
+      operationId: searchCatalogs
+      tags:
+        - Catalogs
+      parameters:
+        - name: q
+          in: query
+          description: Free-text search across catalog metadata
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of catalogs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Catalog'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    post:
+      summary: Create catalog
+      description: Creates a new catalog (librarian-only action).
+      operationId: createCatalog
+      tags:
+        - Catalogs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogCreate'
+      responses:
+        '201':
+          description: Catalog created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalogs/{catalog-id}:
+    get:
+      summary: Get catalog
+      description: Retrieve a catalog by its id.
+      operationId: getCatalogById
+      tags:
+        - Catalogs
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+      responses:
+        '200':
+          description: Catalog found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    put:
+      summary: Update catalog
+      description: Update catalog metadata (librarian-only).
+      operationId: updateCatalog
+      tags:
+        - Catalogs
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogUpdate'
+      responses:
+        '200':
+          description: Catalog updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    delete:
+      summary: Delete catalog
+      description: Delete a catalog and optionally its entries (librarian-only).
+      operationId: deleteCatalog
+      tags:
+        - Catalogs
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+      responses:
+        '204':
+          description: Catalog deleted
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /catalogs/{catalog-id}/catalog-entries:
+    get:
+      summary: Search catalog entries
+      description: Search entries within a catalog.
+      operationId: searchCatalogEntries
+      tags:
+        - CatalogEntries
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Full-text search across title, abstract, author names, tags, ISBN
+        - name: author
+          in: query
+          schema:
+            type: string
+          description: Filter by author name or id
+        - name: isbn
+          in: query
+          schema:
+            type: string
+          description: Filter by ISBN
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Filter by tag
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of catalog entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+
+    post:
+      summary: Create catalog entry
+      description: Create a new catalog entry inside a catalog. New entries can be added automatically but only librarians can change entries.
+      operationId: createCatalogEntry
+      tags:
+        - CatalogEntries
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogEntryCreate'
+      responses:
+        '201':
+          description: Catalog entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+
+  /catalogs/{catalog-id}/catalog-entries/{catalog-entry-id}:
+    get:
+      summary: Get catalog entry
+      description: Retrieve a single catalog entry by id.
+      operationId: getCatalogEntryById
+      tags:
+        - CatalogEntries
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+      responses:
+        '200':
+          description: Catalog entry found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogEntry'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    put:
+      summary: Update catalog entry
+      description: Update a catalog entry (librarian-only). Catalog entries are hashed in Catalog Search for integrity.
+      operationId: updateCatalogEntry
+      tags:
+        - CatalogEntries
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogEntryUpdate'
+      responses:
+        '200':
+          description: Catalog entry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+    delete:
+      summary: Delete catalog entry
+      description: Delete a catalog entry (librarian-only).
+      operationId: deleteCatalogEntry
+      tags:
+        - CatalogEntries
+      parameters:
+        - $ref: '#/components/parameters/CatalogIdParameter'
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+      responses:
+        '204':
+          description: Catalog entry deleted
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+components:
+  parameters:
+    CatalogIdParameter:
+      name: catalog-id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Identifier of the catalog
+    CatalogEntryIdParameter:
+      name: catalog-entry-id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Identifier of the catalog entry
+
+  schemas:
+    Catalog:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Catalog identifier
+        name:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CatalogCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    CatalogUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    CatalogEntry:
+      type: object
+      required:
+        - id
+        - title
+        - identifiers
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Catalog entry identifier
+        title:
+          type: string
+        abstract:
+          type: string
+        publisher:
+          $ref: '#/components/schemas/Publisher'
+        identifiers:
+          type: object
+          properties:
+            isbn:
+              type: string
+            other:
+              type: string
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'
+        publishedOn:
+          type: string
+          format: date
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        hash:
+          type: string
+          description: Hash used by Catalog Search for integrity
+
+    CatalogEntryCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+        abstract:
+          type: string
+        publisher:
+          $ref: '#/components/schemas/Publisher'
+        identifiers:
+          type: object
+          properties:
+            isbn:
+              type: string
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorCreate'
+          minItems: 1
+        publishedOn:
+          type: string
+          format: date
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+
+    CatalogEntryUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        abstract:
+          type: string
+        publisher:
+          $ref: '#/components/schemas/Publisher'
+        identifiers:
+          type: object
+          properties:
+            isbn:
+              type: string
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorCreate'
+        publishedOn:
+          type: string
+          format: date
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        updatedAt:
+          type: string
+          format: date-time
+
+    Author:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    AuthorCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    Publisher:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+
+    EventBookPayload:
+      type: object
+      description: Payload for catalog-related events; represents a Book
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'
+        identifiers:
+          type: object
+          properties:
+            isbn:
+              type: string
+        publishedOn:
+          type: string
+          format: date
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequestResponse:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFoundResponse:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ForbiddenResponse:
+      description: Access forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServiceNotAvailableResponse:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Librarian operations require authorization; end-user read operations may be public or use the same bearer scheme.
+
+security:
+  - bearerAuth: []
+
+x-events:
+  architecture: Kafka
+  x-architecture-pattern: event-driven architecture
+  server: broker.online-library.org:8092
+  payload: Book
+  events:
+    - name: CatalogEntryCreated
+      description: New catalog entry created
+      payload:
+        $ref: '#/components/schemas/EventBookPayload'
+    - name: CatalogEntryDeleted
+      description: Catalog entry deleted
+      payload:
+        $ref: '#/components/schemas/EventBookPayload'
+    - name: CatalogEntryUpdated
+      description: Catalog entry updated
+      payload:
+        $ref: '#/components/schemas/EventBookPayload'
+
+  
