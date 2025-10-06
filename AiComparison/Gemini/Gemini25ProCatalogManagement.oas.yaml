@@ -1,82 +1,74 @@
 openapi: 3.1.0
 info:
   title: Catalog Management API
-ﬁ  description: Catalog Management allows librarians to manage catalog entries and allows
-  version: 2025-1
+  description: This API allows librarians to manage entries in the library catalog. It supports creating, reading, updating, and deleting catalog entries, as well as managing their specific attributes like abstracts and tags.
+  version: '2025-1'
   contact:
     name: Annegret Junker
-    email: annegret.junker@gmx.de # Assuming same contact email as Task Management example
-  x-api-id: f5a3b2c1-d4e5-4f67-890a-1b2c3d4e5f67 # Placeholder UUID
-  x-audience: external-public
 
 servers:
-  - url: 'https://apis.online-library.org/catalog-management'
+  - url: https://apis.online-library.org/catalog-management
+    description: Production Server
 
 security:
   - openIdConnect:
-      - catalog:manage # Assumed scope for management operations
+      - catalog:read
+      - catalog:write
 
 tags:
-  - name: Catalog Entries
-    description: Operations for managing individual catalog entries.
+  - name: Catalog
+    description: Operations for managing catalog entries.
 
 paths:
   /catalog-entries:
     get:
-      description: Retrieves a list of catalog entries.
+      summary: List Catalog Entries
+      description: Responds with a list of catalog entries, optionally filtered by search criteria.
       operationId: getCatalogEntries
       tags:
-        - Catalog Entries
-      security:
-        - openIdConnect:
-            - catalog:manage
+        - Catalog
       parameters:
         - $ref: '#/components/parameters/VersionParameter'
+        - name: title
+          in: query
+          description: Filter by book title
+          schema:
+            type: string
+        - name: author
+          in: query
+          description: Filter by author name
+          schema:
+            type: string
+        - name: isbn
+          in: query
+          description: Filter by ISBN
+          schema:
+            type: string
       responses:
         '200':
-          description: A list of catalog entries.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CatalogEntry'
+          $ref: '#/components/responses/CatalogEntryListResponse'
         '400':
           $ref: '#/components/responses/BadRequestResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
         '500':
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
     post:
+      summary: Create a Catalog Entry
       description: Creates a new catalog entry.
       operationId: createCatalogEntry
       tags:
-        - Catalog Entries
-      security:
-        - openIdConnect:
-            - catalog:manage
+        - Catalog
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
       requestBody:
         $ref: '#/components/requestBodies/CatalogEntryCreateRequest'
       responses:
         '201':
-          description: Catalog entry created successfully.
-          headers:
-            Location:
-              description: Link to the newly created catalog entry.
-              schema:
-                type: string
-                format: uri
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CatalogEntry'
+          $ref: '#/components/responses/CatalogEntryCreatedResponse'
         '400':
           $ref: '#/components/responses/BadRequestResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
         '500':
@@ -84,27 +76,17 @@ paths:
 
   /catalog-entries/{catalogEntryId}:
     get:
-      description: Retrieves a single catalog entry by its ID.
+      summary: Get Catalog Entry by ID
+      description: Responds with a single catalog entry identified by its ID.
       operationId: getCatalogEntryById
       tags:
-        - Catalog Entries
-      security:
-        - openIdConnect:
-            - catalog:manage
+        - Catalog
       parameters:
         - $ref: '#/components/parameters/CatalogEntryIdParameter'
         - $ref: '#/components/parameters/VersionParameter'
       responses:
         '200':
-          description: Single catalog entry response.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CatalogEntry'
-        '400':
-          $ref: '#/components/responses/BadRequestResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          $ref: '#/components/responses/CatalogEntryResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
         '404':
@@ -113,29 +95,21 @@ paths:
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
     put:
-      description: Fully updates an existing catalog entry identified by its ID.
+      summary: Update a Catalog Entry
+      description: Updates an entire catalog entry with the information provided in the request body.
       operationId: updateCatalogEntry
       tags:
-        - Catalog Entries
-      security:
-        - openIdConnect:
-            - catalog:manage
+        - Catalog
       parameters:
         - $ref: '#/components/parameters/CatalogEntryIdParameter'
         - $ref: '#/components/parameters/VersionParameter'
       requestBody:
-        $ref: '#/components/requestBodies/CatalogEntryCreateRequest' # Reusing Create schema for full PUT update
+        $ref: '#/components/requestBodies/CatalogEntryCreateRequest' # A PUT replaces the resource, so it uses the same schema as POST
       responses:
         '200':
-          description: Catalog entry updated successfully.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CatalogEntry'
+          $ref: '#/components/responses/CatalogEntryResponse'
         '400':
           $ref: '#/components/responses/BadRequestResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
         '404':
@@ -144,21 +118,17 @@ paths:
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
     delete:
-      description: Deletes a catalog entry by its ID.
+      summary: Delete a Catalog Entry
+      description: Deletes a catalog entry identified by its ID.
       operationId: deleteCatalogEntry
       tags:
-        - Catalog Entries
-      security:
-        - openIdConnect:
-            - catalog:manage
+        - Catalog
       parameters:
         - $ref: '#/components/parameters/CatalogEntryIdParameter'
         - $ref: '#/components/parameters/VersionParameter'
       responses:
         '204':
-          description: Catalog entry deleted successfully (No Content).
-        '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
+          $ref: '#/components/responses/NoContentResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
         '404':
@@ -166,15 +136,13 @@ paths:
         '500':
           $ref: '#/components/responses/ServiceNotAvailableResponse'
 
-  /catalog-entries/{catalogEntryId}/abstracts:
+  /catalog-entries/{catalogEntryId}/abstract:
     put:
-      description: Updates the abstract of a catalog entry.
-      operationId: updateCatalogEntryAbstract
+      summary: Update an Entry's Abstract
+      description: Updates the abstract for a specific catalog entry.
+      operationId: updateAbstract
       tags:
-        - Catalog Entries
-      security:
-        - openIdConnect:
-            - catalog:manage
+        - Catalog
       parameters:
         - $ref: '#/components/parameters/CatalogEntryIdParameter'
         - $ref: '#/components/parameters/VersionParameter'
@@ -182,15 +150,9 @@ paths:
         $ref: '#/components/requestBodies/AbstractUpdateRequest'
       responses:
         '200':
-          description: Abstract updated successfully.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Abstract'
+          $ref: '#/components/responses/CatalogEntryResponse'
         '400':
           $ref: '#/components/responses/BadRequestResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
         '404':
@@ -200,13 +162,11 @@ paths:
 
   /catalog-entries/{catalogEntryId}/tags:
     put:
-      description: Replaces all existing tags with a new list of tags for a catalog entry.
-      operationId: updateCatalogEntryTags
+      summary: Update an Entry's Tags
+      description: Updates the list of tags for a specific catalog entry.
+      operationId: updateTags
       tags:
-        - Catalog Entries
-      security:
-        - openIdConnect:
-            - catalog:manage
+        - Catalog
       parameters:
         - $ref: '#/components/parameters/CatalogEntryIdParameter'
         - $ref: '#/components/parameters/VersionParameter'
@@ -214,15 +174,9 @@ paths:
         $ref: '#/components/requestBodies/TagsUpdateRequest'
       responses:
         '200':
-          description: Tags updated successfully.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tags'
+          $ref: '#/components/responses/CatalogEntryResponse'
         '400':
           $ref: '#/components/responses/BadRequestResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
         '404':
@@ -235,8 +189,8 @@ components:
     CatalogEntryIdParameter:
       name: catalogEntryId
       in: path
-      description: The unique identifier of a catalog entry.
       required: true
+      description: The unique identifier of the catalog entry.
       schema:
         type: string
         format: uuid
@@ -244,20 +198,21 @@ components:
     VersionParameter:
       name: x-version
       in: header
-      description: API version to use for the request.
       required: true
+      description: The API version for the request.
       schema:
         type: string
-        default: "2025-1"
-        enum: ["2025-1"]
+        enum: ['2025-1']
+        default: '2025-1'
 
   schemas:
     CatalogEntry:
       type: object
+      description: A complete library catalog entry.
       required:
         - id
-        - authors
         - title
+        - authors
         - publisher
         - isbn
         - publishedOn
@@ -267,55 +222,16 @@ components:
         id:
           type: string
           format: uuid
-          description: The unique identifier for the catalog entry.
-        authors:
-          type: array
-          description: The author(s) of the book (1..* in visual glossary).
-          items:
-            type: string
-        title:
-          type: string
-          description: The title of the book (1 in visual glossary).
-        publisher:
-          type: string
-          description: The publisher of the book (1 in visual glossary).
-        isbn:
-          type: string
-          description: The International Standard Book Number (1 in visual glossary).
-        publishedOn:
-          type: string
-          format: date
-          description: The date the book was published (1 in visual glossary).
-        abstract:
-          $ref: '#/components/schemas/Abstract'
-        tags:
-          $ref: '#/components/schemas/Tags'
-        createdAt:
-          type: string
-          format: date-time
-          description: The timestamp when the entry was created.
-        updatedAt:
-          type: string
-          format: date-time
-          description: The timestamp when the entry was last updated.
-
-    CatalogEntryCreate:
-      type: object
-      required:
-        - authors
-        - title
-        - publisher
-        - isbn
-        - publishedOn
-      properties:
-        authors:
-          type: array
-          description: The author(s) of the book.
-          items:
-            type: string
+          description: Unique identifier for the catalog entry.
+          readOnly: true
         title:
           type: string
           description: The title of the book.
+        authors:
+          type: array
+          description: A list of authors for the book.
+          items:
+            type: string
         publisher:
           type: string
           description: The publisher of the book.
@@ -327,27 +243,78 @@ components:
           format: date
           description: The date the book was published.
         abstract:
-          $ref: '#/components/schemas/Abstract'
+          type: string
+          description: A short summary of the book.
         tags:
-          $ref: '#/components/schemas/Tags'
+          type: array
+          description: A list of tags or keywords associated with the book.
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+          description: The timestamp of when the entry was created.
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: The timestamp of the last update to the entry.
+          readOnly: true
 
-    Abstract:
+    CatalogEntryCreate:
+      type: object
+      description: The data required to create a new catalog entry.
+      required:
+        - title
+        - authors
+        - publisher
+        - isbn
+        - publishedOn
+      properties:
+        title:
+          type: string
+          description: The title of the book.
+        authors:
+          type: array
+          description: A list of authors for the book.
+          items:
+            type: string
+        publisher:
+          type: string
+          description: The publisher of the book.
+        isbn:
+          type: string
+          description: The International Standard Book Number.
+        publishedOn:
+          type: string
+          format: date
+          description: The date the book was published.
+        abstract:
+          type: string
+          description: A short summary of the book.
+        tags:
+          type: array
+          description: A list of tags or keywords associated with the book.
+          items:
+            type: string
+
+    AbstractUpdate:
       type: object
       required:
         - abstract
       properties:
         abstract:
           type: string
-          description: A short summary of the catalog entry (Kurzfassung).
+          description: The new abstract text.
 
-    Tags:
+    TagsUpdate:
       type: object
       required:
         - tags
       properties:
         tags:
           type: array
-          description: A list of keywords associated with the catalog entry (Stichwort).
+          description: The complete new list of tags.
           items:
             type: string
 
@@ -365,36 +332,61 @@ components:
           type: object
 
   responses:
+    CatalogEntryResponse:
+      description: A single catalog entry.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryListResponse:
+      description: A list of catalog entries.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryCreatedResponse:
+      description: The catalog entry was created successfully. The `Location` header contains the URL of the new resource.
+      headers:
+        Location:
+          description: The URL of the newly created catalog entry.
+          schema:
+            type: string
+            format: uri
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    NoContentResponse:
+      description: The resource was deleted successfully.
+
     BadRequestResponse:
-      description: Invalid request due to malformed syntax or bad parameters.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    UnauthorizedResponse:
-      description: Authentication failed.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    ForbiddenResponse:
-      description: Access forbidden, insufficient permissions.
+      description: The request was malformed or invalid.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
 
     NotFoundResponse:
-      description: Resource not found.
+      description: The requested resource could not be found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: The client is not authorized to perform this action.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
 
     ServiceNotAvailableResponse:
-      description: Service unavailable due to a server error.
+      description: The service is temporarily unavailable.
       content:
         application/json:
           schema:
@@ -402,7 +394,7 @@ components:
 
   requestBodies:
     CatalogEntryCreateRequest:
-      description: Data for creating a new catalog entry.
+      description: Data for creating or updating a catalog entry.
       required: true
       content:
         application/json:
@@ -410,24 +402,24 @@ components:
             $ref: '#/components/schemas/CatalogEntryCreate'
 
     AbstractUpdateRequest:
-      description: Request to update only the abstract of a catalog entry.
+      description: Data for updating the abstract of a catalog entry.
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Abstract'
+            $ref: '#/components/schemas/AbstractUpdate'
 
     TagsUpdateRequest:
-      description: Request to update the tags of a catalog entry.
+      description: Data for updating the tags of a catalog entry.
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Tags'
+            $ref: '#/components/schemas/TagsUpdate'
 
   securitySchemes:
     openIdConnect:
-      description: Access to Catalog Management via OpenIDConnect
       type: openIdConnect
-      openIdConnectUrl: https://auth.online-library.org/.well-known/openid-configuration # Placeholder URL
+      description: Access to catalog management via OpenID Connect.
+      openIdConnectUrl: https://auth.online-library.org/.well-known/openid-configuration
   

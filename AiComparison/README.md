@@ -64,6 +64,8 @@ The following table gives an overview in comparison of the different LLMs.
 | OpenAI    | ChatGPT 5        | Async |  Adequate  | [ChatGPT 5](#ChatGPT-5)
 | OpenAI    | ChatGPT 4 | Sync | Not usable | [ChatGPT 4](#ChatGPT-4)
 | OpenAI    | ChatGPT 4 | Async | Not usable | [ChatGPT 4](#ChatGPT-4)
+| Google | Gemini 2.5 Pro | Sync | Good | [Gemini 2.5 Pro](#Gemini-25-Pro)
+| Google | Gemini 2.5 Pro | Sync | Good | [Gemini 2.5 Pro](#Gemini-25-Pro)
 | Google | Gemini 2.5 Flash | Sync | Good | [Gemini 2.5 Flash](#Gemini-25-Flash)
 | Google | Gemini 2.5 Flash | Async | Adequate | [Gemini 2.5 Flash](#Gemini-25-Flash)
 
@@ -153,7 +155,25 @@ Even though ChatGPT 5 is difficult to use for API generation, there are principl
 
 ![Comparison ChatGPT 5 (left) and ChatGPT 4 (right)](./OpenAI/ImageOasComparison.jpg)
 
-### Gemini 2.5 Flash
+### Gemini
+
+#### Gemini 2.5 Pro
+
+[OpenAPI](./Gemini/Gemini25ProCatalogManagement.oas.yaml), [Linting OpenAPI](./Gemini/Gemini25ProLinting.oas.md), [Chat](https://docs.google.com/document/d/1XFlyOr7oo71OG-jjMY6znBUCFA3PYrKlZFjmd-qOnAY/edit?usp=sharing)
+
+The API looks clean, but does not have any examples.
+There are some security scopes in the read-only endpoints missing.
+The responses are cleaner defined as in the Flash version, see following figure with Pro-Version on left and the Flash-Version on the right.
+
+![Comparison OpenAPI between Pro (left) and Flash (Right) of Gemini 2.5](./Gemini/ImageComparisonFlashPro.jpg)
+
+[AsyncAPI](./Gemini/Gemini25ProCatalogManagement.aas.yaml), [Linting AsyncAPI](./Gemini/Gemini25ProLinting.aas.md), [Chat](https://docs.google.com/document/d/1Kb-T1deGpkKccMG_-L5SJpT_cdEHhvQwArtDYTOmBoM/edit?usp=sharing)
+
+The specification is useful.
+Some descriptions and examples are missing.
+The event *Book Purchased* is handled.
+ 
+#### Gemini 2.5 Flash
 
 [OpenAPI](./Gemini/Gemini25FlashCatalogManagement.oas.yaml), [Linting OpenAPI](./Gemini/Gemini25FlashCatalogManagement.oas.yaml), [Chat](https://docs.google.com/document/d/1BPaDJpmxkPXFGP4ZANrPTTlO6CEPm40ifkf-iDDaVYE/edit?usp=sharing)
 
