@@ -10,6 +10,9 @@ The generated APIs are linted with the [Spectral](https://docs.stoplight.io/docs
 
 ## Overview
 
+The different models are different suited to generate APIs (see following table).
+Moreover, to create useful APIs, the LLM needs an excellent example (see enhanced OpenAPI using enhanced example).
+
 | Grade     | Provider  | Model             | Sync/Async | Details                              |
 |-----------|-----------|-------------------|------------|--------------------------------------|
 | Excellent | Anthropic | Claude Sonnet 4.5 | Async      | [Sonnet 4.5](#Sonnet-45)             |
@@ -126,6 +129,13 @@ The schema does not contain examples nor descriptions.
 Book is defined as schema, but is not used, because it is only used in events.
 Single type definition of every property increases complexity and makes the definition less human-readable.
 
+[OpenAPI Enhanced](./OpenAI/ChatGpt5CatalogManagementEnhanced.oas.yaml), [Chat](https://chatgpt.com/share/68e3e27c-515c-800e-9be8-929c177c4350)
+
+With the enhanced example, a much better result is reached.
+Examples and descriptions are given.
+Events do not appear anymore.
+The given pattern for ISBN does not work in every case.
+
 [AsyncAPI](./OpenAI/ChatGpt5CatalogManagement.aas.yaml), [Linting AsyncAPI](./OpenAI/ChatGpt5Linting.aas.md), [Chat](https://chatgpt.com/share/68e26c6d-aadc-800e-8173-27a5da6d247a)
 
 The result is medium.
@@ -177,6 +187,10 @@ The responses are cleaner defined as in the Flash version, see following figure 
 
 ![Comparison OpenAPI between Pro (left) and Flash (Right) of Gemini 2.5](./Gemini/ImageComparisonFlashPro.jpg)
 
+[OpenAPI Enhanced](./Gemini/Gemini25ProCatalogManagementEnhanced.yaml), [Chat](https://docs.google.com/document/d/1GrsaA83GfKD6SDDp9bPlAhXNkTJfNyTLMLqXsMJhxA0/edit?usp=sharing)
+
+Examples are given, but in the deprecated version of *example* instead of *examples* as defined in OpenAPI 3.1.0.
+
 [AsyncAPI](./Gemini/Gemini25ProCatalogManagement.aas.yaml), [Linting AsyncAPI](./Gemini/Gemini25ProLinting.aas.md), [Chat](https://docs.google.com/document/d/1Kb-T1deGpkKccMG_-L5SJpT_cdEHhvQwArtDYTOmBoM/edit?usp=sharing)
 
 The specification is useful.
@@ -210,6 +224,8 @@ For the generation the example specification cannot be uploaded. It must be copi
 Descriptions and examples are missing.
 Strings do not have either minLength/maxlength nor patterns.
 For the identifier no format as uuid is given.
+
+Using the [enhanced Task Management](TaskManagementEnhanced.yaml) is not possible because the message exceeds the maximum of 10240 characters.
 
 [AsyncAPI](./Copilot/CopilotCatalogManagement.aas.yaml), [Linting AsyncAPI](./Copilot/CopilotLinting.aas.md), [Chat](https://copilot.microsoft.com/shares/exDgvjTQfMJoZc3ADdJvq)
 
