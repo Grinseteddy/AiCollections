@@ -29,6 +29,28 @@ Walk away seeing APIs differently: not as integration tax, but as domain boundar
 
 The talk provides different resources which can be used later in the day-to-day working life.
 
-[GitHub]()
+[GitHub](https://github.com/Grinseteddy/AiCollections/tree/main/SapEcosystem20251209)
+[Miro Template](https://miro.com/templates/api-product-canvas/)
+
+## Learning Recommendation
+
+### Books
+
+[Mastering Domain-Driven Design](https://www.amazon.de/-/en/Mastering-Domain-Driven-Design-Collaborative-storytelling/dp/936589252X/ref=sr_1_1?crid=31OJH5204JZDW&dib=eyJ2IjoiMSJ9.eQK0MqPNbefSqUYU44CYf4dMV7OgJ25q3iYj8QZdBc-2cZhiaLF7MtK4yk2eqe2aYOPWJWZMDNc5iRjxSZhnLKUibFy5tJKN0ViIA_aVTnx9JynV_YabSQGha5xwhxzKU_ujMRFgIRDb96WcIiT4QNiLvSEIediHSYQ4InxvtjkaByzh2o9dDSY6AD8ykOxoWeLlgWNV_17pHs7Ze8yXMlPgWAYviDeXlvl-aq9KxBA.nG2MUO6ez8vta_56-z3siTM-ebYgiR55K9k0unwzuL0&dib_tag=se&keywords=Mastering+domain-driven+design&qid=1761049418&sprefix=mastering+domain-driven+design%2Caps%2C85&sr=8-1)
+
+[Crafting Great APIs with DDD](https://www.amazon.de/-/en/Crafting-Great-APIs-Domain-Driven-Design/dp/B0DYNMWP67/ref=sr_1_1?crid=8DQWBDQI1F6E&dib=eyJ2IjoiMSJ9.I-30x4blAFNRVy7XwU46MmZe4CAgm7WCrhcbc3Dc3IAZGz52hcE4wOcmOmdf7Fm13JCngz8aUpe8N0a2mfz0YycwV3zF2QOVvq2huAskVR43pQCR1Kp7c0InLr0VS752qJovpH77ONquEDc6F7rRg3iehrkD_UoDHRLO7VqRXLJzvDiF9TjcyVKFAzOnkN72RHs0JGuFQPJpuq0D-ztMDJ1tVWO0mGl6JF-GgSwUzJI.DJjElSH5YiXsAGPqi_J0snyol6CLR5bv4zkeEzLHSao&dib_tag=se&keywords=Crafting+great+APIs&qid=1761049496&sprefix=crafting+great+apis%2Caps%2C90&sr=8-1)
+
+## Session Metadata
+
+The following metadata is used to provide the audience more orientation and allow the community to better search and filter through the library. Please fill in the following metadata for your session.
+
+```yaml
+- Date of Evaluation: 2025-12-09
+- Development Phase:  Requirements | Plan | Code | Build | Test | Release | Operate, Observe and Automate | Cross | Others)
+- Adoption Readiness:  Visionary | Early Adopter | Ready for Adoption | Default in Golden Path
+- Scopes: General | CAP Java | CAP node.js | Java | ABAP | node.js | ...
+- Topic Clusters: Test Automation, Architecture, DevOps, Developer Experience, Security, Data Management, Application Foundation, Integration, Artificial Intelligence, User Experience, Lifecycle Management, Infrastructure, Culture, Soft Skills
+- External Speaker: Yes
+```
 
 
