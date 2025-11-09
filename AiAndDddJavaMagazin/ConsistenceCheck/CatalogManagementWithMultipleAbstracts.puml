@@ -1,0 +1,158 @@
+@startuml Catalog Management Domain Model - Multiple Abstracts
+
+!define ENTITY_COLOR #E1F5FE
+!define VALUE_OBJECT_COLOR #FFF9C4
+!define COLLECTION_COLOR #F3E5F5
+!define ABSTRACT_COLOR #FFE0B2
+
+' Aggregate Root
+class CatalogEntry <<Aggregate Root>> ENTITY_COLOR {
+  - id : UUID
+  - title : String
+  - authors : String[]
+  - isbn : String
+  - publisher : String
+  - publishedOn : Date
+  - createdAt : DateTime
+  - updatedAt : DateTime
+}
+
+' Entity within Aggregate
+class Abstract <<Entity>> ENTITY_COLOR {
+  - abstractNumber : String
+  - content : String
+}
+
+' Abstract Author Type (Polymorphic)
+abstract class Author <<Abstract>> ABSTRACT_COLOR {
+  - objectType : String
+}
+
+class Member <<Value Object>> VALUE_OBJECT_COLOR {
+  - objectType : String = "MEMBER"
+  - id : UUID
+  - name : String
+  - link : URI
+}
+
+class Librarian <<Value Object>> VALUE_OBJECT_COLOR {
+  - objectType : String = "LIBRARIAN"
+  - id : UUID
+  - name : String
+  - link : URI
+}
+
+class Publisher <<Value Object>> VALUE_OBJECT_COLOR {
+  - objectType : String = "PUBLISHER"
+  - name : String
+}
+
+' Value Objects
+class Tag <<Value Object>> VALUE_OBJECT_COLOR {
+  - name : String
+}
+
+class CatalogEntryLink <<Value Object>> VALUE_OBJECT_COLOR {
+  - objectType : String
+  - link : URI
+}
+
+' Collections
+class CatalogEntriesWithPagination <<Collection>> COLLECTION_COLOR {
+  - catalogEntries : CatalogEntry[]
+  - pagination : Pagination
+}
+
+class Pagination <<Value Object>> VALUE_OBJECT_COLOR {
+  - limit : Integer
+  - offset : Integer
+  - total : Integer
+}
+
+class Error <<Value Object>> VALUE_OBJECT_COLOR {
+  - code : String
+  - message : String
+  - details : Object
+}
+
+' Relationships - Aggregate Structure
+CatalogEntry "1" *-- "0..*" Abstract : contains >
+Abstract "1" o-- "1" Author : authored by >
+
+' Author Hierarchy (Polymorphic with Discriminator)
+Author <|-- Member
+Author <|-- Librarian
+Author <|-- Publisher
+
+' Other Relationships
+CatalogEntry "1" o-- "0..20" Tag : tagged with >
+CatalogEntry "1" <.. "1" CatalogEntryLink : references
+
+CatalogEntriesWithPagination "1" *-- "1" Pagination : includes >
+CatalogEntriesWithPagination "1" o-- "0..100" CatalogEntry : contains >
+
+' Notes
+note left of CatalogEntry
+  **Aggregate Root**
+  Represents a book or publication
+  in the library catalog.
+
+  Constraints:
+  - 1-10 authors required
+  - 0-20 tags allowed
+  - ISBN follows standard pattern
+  - Can have multiple abstracts
+end note
+
+note left of Abstract
+  **Entity within Aggregate**
+  Multiple abstracts can exist per
+  catalog entry, each with a unique
+  abstractNumber (00, 01, 02...).
+
+  Each abstract has an author which
+  can be a Member, Librarian, or
+  Publisher.
+
+  Max content length: 2000 characters
+end note
+
+note left of Author
+  **Polymorphic Type**
+  Uses discriminator pattern with
+  objectType property.
+
+  Types:
+  - MEMBER (library member)
+  - LIBRARIAN (library employee)
+  - PUBLISHER (publishing company)
+end note
+
+note bottom of Member
+  **References Member Aggregate**
+  Links to member-management
+  bounded context via URI.
+end note
+
+note bottom of Librarian
+  **References Employee Aggregate**
+  Links to employee-management
+  bounded context via URI.
+end note
+
+note bottom of Tag
+  **Value Object**
+  Used for categorization and
+  book recommendations.
+
+  Length: 2-50 characters
+end note
+
+note bottom of Pagination
+  Supports paginated retrieval
+  of catalog entries.
+
+  Page size: 1-100 entries
+end note
+
+@enduml

@@ -1,0 +1,938 @@
+openapi: 3.1.0
+info:
+  title: Catalog Management API
+  description: API for managing catalog entries in library systems, allowing librarians to manage catalog entries and tag books for recommendations
+  version: 1.0.0
+  contact:
+    name: Annegret Junker
+  x-api-id: 7a2c8f1d-9e4b-4a33-bc12-947d6fae3087
+  x-audience: external-public
+
+servers:
+  - url: 'https://apis.online-library.org/catalog-management'
+    description: Production server
+
+security:
+  - openIdConnect:
+      - catalog:read
+      - catalog:write
+      - catalog:admin
+
+tags:
+  - name: Catalog Entries
+    description: Catalog entry management operations
+  - name: Abstracts
+    description: Abstract management for catalog entries
+  - name: Tags
+    description: Tag management for catalog entries
+
+paths:
+  /catalog-entries:
+    get:
+      description: Get a list of catalog entries with optional filtering
+      operationId: getCatalogEntries
+      summary: Retrieve catalog entries
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/SearchParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/AuthorsSearchParameter'
+        - $ref: '#/components/parameters/IsbnSearchParameter'
+        - $ref: '#/components/parameters/PublisherSearchParameter'
+        - $ref: '#/components/parameters/TagsSearchParameter'
+        - $ref: '#/components/parameters/PageSizeSearchParameter'
+        - $ref: '#/components/parameters/OffsetSearchParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntriesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    post:
+      description: Create a new catalog entry. New entries can be also added automatically by 'BookPurchased' event.
+      operationId: createCatalogEntry
+      summary: Create new catalog entry
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/CatalogEntryCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-entries/{catalog-entry}:
+    get:
+      description: Retrieve a specific catalog entry by its identifier
+      operationId: getCatalogEntryById
+      summary: Get catalog entry by ID
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    put:
+      description: Update an existing catalog entry. Only librarians can change entries.
+      operationId: updateCatalogEntry
+      summary: Update catalog entry
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/CatalogEntryUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CatalogEntryLinkResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    delete:
+      operationId: deleteCatalogEntry
+      summary: Delete catalog entry
+      description: Delete a catalog entry from the catalog
+      tags:
+        - Catalog Entries
+      security:
+        - openIdConnect:
+            - catalog:admin
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '204':
+          description: Catalog entry deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-entries/{catalog-entry}/abstracts:
+    get:
+      description: Retrieve all abstracts of a catalog entry
+      operationId: getAbstractsByCatalogEntry
+      summary: Retrieve abstracts
+      tags:
+        - Abstracts
+      security:
+        - openIdConnect:
+            - catalog:read
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/AbstractsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    post:
+      description: Creates a new abstract for a book in the catalog including the author
+      operationId:   createAbstractOfACatalogEntry
+      summary: Create an abstract
+      tags:
+        - Abstracts
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/AbstractUpdateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/AbstractsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-entries/{catalog-entry}/abstracts/{abstractNumber}:
+    get:
+      description: Retrieves a single abstract of a collection of abstracts at a catalog entry
+      operationId: getAbstractByNumberAndCatalogEntryId
+      summary: Retrieve single abstract
+      tags:
+        - Abstracts
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/AbstractNumberParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/SingleAbstractResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    put:
+      description: Update or add an abstract to a catalog entry
+      operationId: updateAbstractByNumberAndCatalogEntryId
+      summary: Update catalog entry abstract
+      tags:
+        - Abstracts
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/AbstractNumberParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/AbstractUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SingleAbstractResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+    delete:
+      description: Deletes a certain abstract
+      operationId: deleteAbstractByNumberAndCatalogEntryId
+      summary: Delete abstract
+      tags:
+        - Abstracts
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/AbstractNumberParameter'
+      responses:
+        '204':
+          description: Abstract deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+  /catalog-entries/{catalog-entry}/tags:
+    put:
+      description: Update tags for a catalog entry to enable book recommendations
+      operationId: updateCatalogEntryTags
+      summary: Update catalog entry tags
+      tags:
+        - Tags
+      security:
+        - openIdConnect:
+            - catalog:write
+      parameters:
+        - $ref: '#/components/parameters/CatalogEntryIdParameter'
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/TagsUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TagsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+
+components:
+  parameters:
+    CatalogEntryIdParameter:
+      description: Unique identifier for the catalog entry
+      name: catalog-entry
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - b2c3f638-d8c1-4c36-8f6b-b51041a102fc
+
+    SearchParameter:
+      description: Search term for catalog entries
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 100
+        examples:
+          - Domain-Driven Design
+
+    AuthorsSearchParameter:
+      description: Filter by author names
+      name: authors
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+          minLength: 2
+          maxLength: 40
+          examples:
+            - Eric Evans
+
+    PublisherSearchParameter:
+      description: Filter by publisher
+      name: publisher
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 40
+        examples:
+          - Addison Wesley
+
+    IsbnSearchParameter:
+      description: Filter by ISBN
+      name: isbn
+      in: query
+      required: false
+      schema:
+        type: string
+        pattern: (ISBN(?:[- ]*1[03])?:* )+?((?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}|97[89][0-9]{10}|(?=(?:[0-9]+[- ]){4})[- 0-9]{17})(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X])
+        examples:
+          - 0-321-12521-5
+          - 979-8-8688-1456-3
+          - 978-93-65892-529
+
+    TagsSearchParameter:
+      description: Filter by tags
+      name: tags
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+          minLength: 2
+          maxLength: 20
+          examples:
+            - DDD
+
+    PageSizeSearchParameter:
+      description: Maximum number of entries to return
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+        examples:
+          - 20
+
+    OffsetSearchParameter:
+      description: Number of entries to skip
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+        examples:
+          - 20
+
+    AbstractNumberParameter:
+      description: Abstract number in a collection of abstracts in a catalog entry
+      name: abstractNumber
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[0-9]{2}$
+        examples:
+          - 01
+
+    VersionParameter:
+      name: version
+      in: header
+      required: true
+      description: API version
+      schema:
+        type: string
+        default: 1.0.0
+        enum:
+          - 1.0.0
+        examples:
+          - 1.0.0
+
+  requestBodies:
+    CatalogEntryCreateRequest:
+      description: Catalog entry creation request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryCreate'
+
+    CatalogEntryUpdateRequest:
+      description: Catalog entry update request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryUpdate'
+
+    AbstractUpdateRequest:
+      description: Abstract update request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Abstract'
+
+    TagsUpdateRequest:
+      description: Tags update request
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Tags'
+
+  responses:
+    CatalogEntryResponse:
+      description: Response with a single catalog entry
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntry'
+
+    CatalogEntryLinkResponse:
+      description: Link to a single entry of the catalog
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryLink'
+
+    CatalogEntriesResponse:
+      description: List of catalog entries
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntriesWithPagination'
+
+    CatalogEntryCreatedResponse:
+      description: Catalog entry created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CatalogEntryLink'
+
+    AbstractsResponse:
+      description: Response with an abstract of a catalog entry
+      content:
+        application/json:
+          schema:
+            type: array
+            minItems: 0
+            maxItems: 20
+            items:
+              $ref: '#/components/schemas/Abstract'
+
+    SingleAbstractResponse:
+      description: Response with an single abstract belonging to catalog entry
+      content:
+        schema:
+          $ref: '#/components/schemas/Abstract'
+
+    TagsResponse:
+      description: Tags updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Tags'
+
+    BadRequestResponse:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFoundResponse:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: Access forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServiceNotAvailableResponse:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    CatalogEntry:
+      type: object
+      required:
+        - id
+        - title
+        - authors
+        - isbn
+        - publisher
+        - publishedOn
+        - createdAt
+        - updatedAt
+      allOf:
+        - $ref: '#/components/schemas/CatalogEntryCreate'
+        - properties:
+            id:
+              description: Unique identifier for the catalog entry
+              type: string
+              format: uuid
+              examples:
+                - b2c3f638-d8c1-4c36-8f6b-b51041a102fc
+            createdAt:
+              type: string
+              format: date-time
+              description: Timestamp when the entry was created
+              readOnly: true
+            updatedAt:
+              type: string
+              format: date-time
+              description: Timestamp when the entry was last updated
+              readOnly: true
+
+    CatalogEntryCreate:
+      type: object
+      required:
+        - title
+        - authors
+        - isbn
+        - publisher
+        - publishedOn
+      properties:
+        title:
+          description: Title of the book or publication
+          type: string
+          minLength: 1
+          maxLength: 500
+          examples:
+            - Domain-Driven Design
+        authors:
+          description: Authors of the publication (at least one required)
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+            examples:
+              - Eric Evans
+        isbn:
+          description: ISBN of the publication
+          type: string
+          pattern: '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$'
+          examples:
+            - 0-321-12521-5
+            - 979-8-8688-1456-3
+            - 978-93-65892-529
+        publisher:
+          description: Publisher of the publication
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples:
+            - Addison Wesley
+        publishedOn:
+          description: Publication date
+          type: string
+          format: date
+          examples:
+            - 2004-01-01
+        abstracts:
+          description: Abstracts of the corresponding book created by members, librarians, or the publisher
+          type: array
+          minItems: 0
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Abstract'
+        tags:
+          description: Tags for categorization and recommendations
+          type: array
+          minItems: 0
+          maxItems: 20
+          items:
+            type: string
+            minLength: 2
+            maxLength: 50
+            examples:
+              - DDD
+
+    CatalogEntryUpdate:
+      description: Properties to update a catalog entry
+      type: object
+      properties:
+        title:
+          description: Title of the book or publication
+          type: string
+          minLength: 1
+          maxLength: 500
+          examples:
+            - Domain-Driven Design
+        authors:
+          description: Authors of the publication (at least one required)
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+            examples:
+              - Eric Evans
+        isbn:
+          description: ISBN of the publication
+          type: string
+          pattern: '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$'
+          examples:
+            - 0-321-12521-5
+            - 979-8-8688-1456-3
+            - 978-93-65892-529
+        publisher:
+          description: Publisher of the publication
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples:
+            - Addison Wesley
+        publishedOn:
+          description: Publication date
+          type: string
+          format: date
+          examples:
+            - 2004-01-01
+
+    CatalogEntryLink:
+      description: Link to a specific catalog entry
+      type: object
+      required:
+        - link
+      properties:
+        objectType:
+          description: Simple type of an object
+          type: string
+          minLength: 5
+          maxLength: 80
+          default: object
+          examples:
+            - CatalogEntry
+        link:
+          description: Link to the object
+          type: string
+          format: uri
+          examples:
+            - https://apis.online-library.org/catalog-management/catalog-entries/b2c3f638-d8c1-4c36-8f6b-b51041a102fc
+
+    CatalogEntriesWithPagination:
+      description: Collection of catalog entries with pagination information
+      type: object
+      required:
+        - catalogEntries
+        - pagination
+      properties:
+        catalogEntries:
+          description: Collection of catalog entries
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/CatalogEntry'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Pagination:
+      description: Information of pagination application of a collection
+      type: object
+      required:
+        - limit
+        - offset
+        - total
+      properties:
+        limit:
+          description: Size of a page - limit of entries of a page
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          default: 20
+          examples:
+            - 20
+        offset:
+          description: Number of entries which are skipped before the current page
+          type: integer
+          format: int32
+          minimum: 0
+          default: 0
+          examples:
+            - 10
+        total:
+          description: Total number of entries of the collection
+          type: integer
+          format: int32
+          minimum: 1
+          examples:
+            - 132
+
+    Abstract:
+      description: Summary of a book content
+      type: object
+      required:
+        - content
+      properties:
+        abstractNumber:
+          description: Identifier of the abstract starting with 00
+          type: string
+          pattern: ^[0-9]{2}
+          example:
+            - 01
+        author:
+          oneOf:
+            - $ref: '#/components/schemas/Member'
+            - $ref: '#/components/schemas/Librarian'
+            - $ref: '#/components/schemas/Publisher'
+          discriminator:
+            propertyName: objectType
+            mapping:
+              MEMBER: '#/components/schemas/Member'
+              LIBRARIAN: '#/components/schemas/Librarian'
+              PUBLISHER: '#/components/schemas/Publisher'
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Abstract or summary content
+
+    Member:
+      description: Member information as author of an abstract
+      type: object
+      required:
+        - objectType
+        - id
+      properties:
+        objectType:
+          description: Discriminator to select the right type in a polymorphic behavior
+          type: string
+          enum:
+            - MEMBER
+          default:
+            - MEMBER
+          examples:
+            - MEMBER
+        link:
+          description: Link to the member management to retrieve detailed information about a member
+          type: string
+          format: uri
+          examples:
+            - https://https://apis.online-library.org/member-management/085a543b-4451-4fce-8c34-67e4e3b241ae
+        id:
+          description: Identifier of the member
+          type: string
+          format: uuid
+          examples:
+            - 085a543b-4451-4fce-8c34-67e4e3b241ae
+        name:
+          description: Given and family name concatenated of the member
+          type: string
+          minLength: 2
+          maxLength: 40
+          examples:
+            - John Meridith Smith
+
+    Librarian:
+      description: Librarian information as an author of an abstract
+      type: object
+      required:
+        - objectType
+        - id
+      properties:
+        objectType:
+          description: Discriminator to select the right type in a polymorphic behavior
+          type: string
+          enum:
+            - LIBRARIAN
+          default:
+            - LIBRARIAN
+          examples:
+            - LIBRARIAN
+        link:
+          description: Link to the employee management to retrieve detailed information about a librian
+          type: string
+          format: uri
+          examples:
+            - https://https://apis.online-library.org/employee-management/a28a7284-f988-4261-b567-075bb4f822af
+        id:
+          description: Identifier of the member
+          type: string
+          format: uuid
+          examples:
+            - a28a7284-f988-4261-b567-075bb4f822af
+        name:
+          description: Given name of the librarian
+          type: string
+          minLength: 2
+          maxLength: 40
+          examples:
+            - Stephen
+
+    Publisher:
+      description: Publisher name as information for abstracts
+      type: object
+      required:
+        - objectType
+        - name
+      properties:
+        objectType:
+          description: Discriminator to select the right type in a polymorphic behavior
+          type: string
+          enum:
+            - PUBLISHER
+          default:
+            - PUBLISHER
+          examples:
+            - PUBLISHER
+        name:
+          description: Name of the publisher
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples:
+            - Addison Wesley
+
+    Tag:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Tag name for categorization
+
+    Tags:
+      description: Collection of tag names for categorization
+      required:
+        - tags
+      properties:
+        tags:
+          type: array
+          minItems: 0
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Tag'
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+
+
+
+
+  securitySchemes:
+    openIdConnect:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.online-library.org/.well-known/openid-configuration
+  
