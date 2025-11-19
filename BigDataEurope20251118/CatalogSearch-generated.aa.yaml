@@ -1,0 +1,396 @@
+asyncapi: 3.0.0
+
+info:
+  title: Catalog Search
+  version: 1.0.0
+  description: |
+    Asynchronous event-driven service for catalog management in the online library system.
+    
+    This service provides event streaming capabilities for real-time catalog updates and book selections.
+    Consumers can subscribe to catalog entry lifecycle events (created, changed, deleted) and the service
+    publishes events when members select books for reading.
+    
+    **Event Protocols:** Kafka and AMQP
+    
+    **Events Received:**
+    - Catalog Entry Created
+    - Catalog Entry Changed
+    - Catalog Entry Deleted
+    
+    **Events Published:**
+    - Book Selected
+    
+    **Note:** Synchronous REST API operations for searching and retrieving catalog entries are documented
+    separately in the OpenAPI specification.
+  contact:
+    name: Annegret & Fabrizio
+
+servers:
+  production-kafka:
+    host: kafka-broker.online-library.org:9092
+    protocol: kafka
+    description: Production Kafka broker for asynchronous event streaming
+    tags:
+      - name: event-sourcing
+        description: Event-driven architecture using Kafka
+      - name: async-protocol
+        description: Asynchronous message streaming
+
+  production-amqp:
+    host: amqp-broker.online-library.org:5672
+    protocol: amqp
+    description: Production AMQP broker as alternative for event streaming
+    tags:
+      - name: event-sourcing
+        description: Event-driven architecture using AMQP
+      - name: async-protocol
+        description: Asynchronous message streaming
+
+channels:
+  catalogEntryCreated:
+    address: catalog.entry.created
+    servers:
+      - $ref: '#/servers/production-kafka'
+      - $ref: '#/servers/production-amqp'
+    messages:
+      created:
+        $ref: '#/components/messages/CatalogEntryCreatedEvent'
+    description: Event published when a new catalog entry is created
+
+  catalogEntryChanged:
+    address: catalog.entry.changed
+    servers:
+      - $ref: '#/servers/production-kafka'
+      - $ref: '#/servers/production-amqp'
+    messages:
+      changed:
+        $ref: '#/components/messages/CatalogEntryChangedEvent'
+    description: Event published when a catalog entry is modified
+
+  catalogEntryDeleted:
+    address: catalog.entry.deleted
+    servers:
+      - $ref: '#/servers/production-kafka'
+      - $ref: '#/servers/production-amqp'
+    messages:
+      deleted:
+        $ref: '#/components/messages/CatalogEntryDeletedEvent'
+    description: Event published when a catalog entry is removed
+
+  bookSelected:
+    address: book.selected
+    servers:
+      - $ref: '#/servers/production-kafka'
+      - $ref: '#/servers/production-amqp'
+    messages:
+      selected:
+        $ref: '#/components/messages/BookSelectedEvent'
+    description: Event published when a member selects a book for reading
+
+operations:
+  receiveCatalogEntryCreated:
+    action: receive
+    channel:
+      $ref: '#/channels/catalogEntryCreated'
+    summary: Receive catalog entry creation events
+    description: Subscribe to events when new catalog entries are added to the system
+    traits:
+      - $ref: '#/components/operationTraits/kafka'
+    messages:
+      - $ref: '#/components/messages/CatalogEntryCreatedEvent'
+
+  receiveCatalogEntryChanged:
+    action: receive
+    channel:
+      $ref: '#/channels/catalogEntryChanged'
+    summary: Receive catalog entry update events
+    description: Subscribe to events when catalog entries are modified
+    traits:
+      - $ref: '#/components/operationTraits/kafka'
+    messages:
+      - $ref: '#/components/messages/CatalogEntryChangedEvent'
+
+  receiveCatalogEntryDeleted:
+    action: receive
+    channel:
+      $ref: '#/channels/catalogEntryDeleted'
+    summary: Receive catalog entry deletion events
+    description: Subscribe to events when catalog entries are removed
+    traits:
+      - $ref: '#/components/operationTraits/kafka'
+    messages:
+      - $ref: '#/components/messages/CatalogEntryDeletedEvent'
+
+  publishBookSelected:
+    action: send
+    channel:
+      $ref: '#/channels/bookSelected'
+    summary: Publish book selection events
+    description: Publish events when members select books for reading
+    traits:
+      - $ref: '#/components/operationTraits/kafka'
+    messages:
+      - $ref: '#/components/messages/BookSelectedEvent'
+
+components:
+  messages:
+    CatalogEntryCreatedEvent:
+      name: CatalogEntryCreatedEvent
+      title: Catalog Entry Created Event
+      summary: Event indicating a new catalog entry was created
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/CatalogEntryEventPayload'
+
+    CatalogEntryChangedEvent:
+      name: CatalogEntryChangedEvent
+      title: Catalog Entry Changed Event
+      summary: Event indicating a catalog entry was modified
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/CatalogEntryEventPayload'
+
+    CatalogEntryDeletedEvent:
+      name: CatalogEntryDeletedEvent
+      title: Catalog Entry Deleted Event
+      summary: Event indicating a catalog entry was removed
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/CatalogEntryIdPayload'
+
+    BookSelectedEvent:
+      name: BookSelectedEvent
+      title: Book Selected Event
+      summary: Event indicating a member selected a book
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: '#/components/schemas/BookPayload'
+
+  schemas:
+    CatalogEntry:
+      type: object
+      description: Complete catalog entry with all details
+      required:
+        - catalogIdentifier
+        - isbn
+        - authors
+        - title
+      properties:
+        catalogIdentifier:
+          type: string
+          description: Unique catalog entry identifier
+          example: "CAT-2024-001234"
+        isbn:
+          oneOf:
+            - $ref: '#/components/schemas/ISBN10'
+            - $ref: '#/components/schemas/ISBN13'
+          description: ISBN in either ISBN-10 or ISBN-13 format
+        authors:
+          type: array
+          description: Detailed author information
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Author'
+        title:
+          type: string
+          description: Complete book title
+          example: "Domain-Driven Design: Tackling Complexity in the Heart of Software"
+        abstract:
+          type: string
+          description: Book abstract or description (optional)
+          example: "Eric Evans's excellent book is now the de-facto standard for modeling business domains..."
+
+    CatalogEntryShort:
+      type: object
+      description: Abbreviated catalog entry for event notifications
+      required:
+        - catalogIdentifier
+        - title
+        - authors
+      properties:
+        catalogIdentifier:
+          type: string
+          description: Unique catalog entry identifier
+          example: "CAT-2024-001234"
+        title:
+          type: string
+          description: Book title
+          example: "Domain-Driven Design: Tackling Complexity in the Heart of Software"
+        authors:
+          type: array
+          description: List of author names
+          items:
+            type: string
+          example: ["Eric Evans"]
+        isbn:
+          type: string
+          description: ISBN-10 or ISBN-13
+          example: "978-0321125217"
+
+    Author:
+      type: object
+      description: Author information
+      required:
+        - authorIdentifier
+        - name
+      properties:
+        authorIdentifier:
+          type: string
+          description: Unique author identifier
+          example: "AUTH-EVANS-ERIC-001"
+        name:
+          type: string
+          description: Author's full name (family name)
+          example: "Evans"
+        givenName:
+          type: string
+          description: Author's given name(s)
+          example: "Eric"
+
+    ISBN10:
+      type: string
+      description: ISBN-10 format
+      pattern: '^[0-9]{9}[0-9X]$'
+      example: "0321125215"
+
+    ISBN13:
+      type: string
+      description: ISBN-13 format
+      pattern: '^978[0-9]{10}$'
+      example: "9780321125217"
+
+    Book:
+      type: object
+      description: Book entity for selection events
+      required:
+        - catalogIdentifier
+        - title
+        - authors
+      properties:
+        catalogIdentifier:
+          type: string
+          description: Reference to catalog entry
+          example: "CAT-2024-001234"
+        title:
+          type: string
+          description: Book title
+          example: "Domain-Driven Design"
+        authors:
+          type: array
+          description: Book authors
+          items:
+            $ref: '#/components/schemas/Author'
+
+    CatalogEntryEventPayload:
+      type: object
+      description: Payload for catalog entry events (created/changed)
+      required:
+        - catalogEntry
+        - timestamp
+      properties:
+        catalogEntry:
+          oneOf:
+            - $ref: '#/components/schemas/CatalogEntryShort'
+            - $ref: '#/components/schemas/CatalogEntry'
+          description: The catalog entry data (short or full format)
+        timestamp:
+          type: string
+          format: date-time
+          description: Event timestamp
+          example: "2024-11-19T10:30:00Z"
+        eventId:
+          type: string
+          format: uuid
+          description: Unique event identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+
+    CatalogEntryIdPayload:
+      type: object
+      description: Payload containing only catalog entry identifier (for deletion)
+      required:
+        - catalogEntryId
+        - timestamp
+      properties:
+        catalogEntryId:
+          type: string
+          description: Identifier of deleted catalog entry
+          example: "CAT-2024-001234"
+        timestamp:
+          type: string
+          format: date-time
+          description: Event timestamp
+          example: "2024-11-19T10:30:00Z"
+        eventId:
+          type: string
+          format: uuid
+          description: Unique event identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+
+    BookPayload:
+      type: object
+      description: Payload for book selection event
+      required:
+        - book
+        - memberId
+        - timestamp
+      properties:
+        book:
+          $ref: '#/components/schemas/Book'
+        memberId:
+          type: string
+          description: Member who selected the book
+          example: "MEM-2024-005678"
+        selectionType:
+          type: string
+          enum: [borrow, reserve, purchase]
+          description: Type of selection
+          example: "borrow"
+        timestamp:
+          type: string
+          format: date-time
+          description: Event timestamp
+          example: "2024-11-19T10:30:00Z"
+        eventId:
+          type: string
+          format: uuid
+          description: Unique event identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+
+  messageTraits:
+    commonHeaders:
+      headers:
+        type: object
+        properties:
+          correlationId:
+            type: string
+            format: uuid
+            description: Correlation ID for tracking related events
+          source:
+            type: string
+            description: Source service that published the event
+            example: "catalog-search-service"
+          eventType:
+            type: string
+            description: Type of event
+
+  operationTraits:
+    kafka:
+      bindings:
+        kafka:
+          groupId:
+            type: string
+            description: Consumer group ID for message consumption
+            example: "catalog-search-service-group"
+          clientId:
+            type: string
+            description: Client ID for the consumer
+            example: "catalog-search-service-01"
+
