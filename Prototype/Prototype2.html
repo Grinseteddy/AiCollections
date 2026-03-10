@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>eGK – Single Page App</title>
+
+    <style>
+        :root {
+            --brand:#00794c;
+            --bg:#fafafa;
+            --text:#003F2D;
+            --line:#d9e3dd;
+        }
+        body {
+            margin:0;
+            font-family:Arial, sans-serif;
+            background:var(--bg);
+            color:var(--text);
+        }
+
+        /* NAVBAR */
+        .navbar {
+            background:#fff;
+            border-bottom:1px solid var(--line);
+            padding:12px 24px;
+            font-weight:bold;
+            color:var(--brand);
+            position:sticky; top:0; z-index:40;
+        }
+
+        /* LAYOUT */
+        .wrap {
+            display:flex;
+            max-width:1200px;
+            margin:0 auto;
+        }
+        .sidebar {
+            width:240px;
+            background:white;
+            border-right:1px solid var(--line);
+            padding:16px;
+            position:sticky;
+            top:52px;
+            height:calc(100vh - 52px);
+            overflow:auto;
+        }
+
+        .sidebar button {
+            width:100%;
+            border:1px solid var(--line);
+            background:#f7f7f7;
+            padding:10px;
+            border-radius:8px;
+            cursor:pointer;
+            text-align:left;
+            margin-bottom:10px;
+        }
+        .sidebar button:hover {
+            border-color:var(--brand);
+        }
+
+        /* MAIN CONTENT */
+        .main {
+            flex:1;
+            padding:24px;
+        }
+
+        h1 { text-align:center; margin-bottom:24px; color:var(--brand) }
+        h2 { margin-top:0; color:var(--brand) }
+
+        /* STEPPER */
+        .stepper {
+            display:flex;
+            gap:10px;
+            padding:12px;
+            background:white;
+            border-bottom:1px solid var(--line);
+            position:sticky; top:52px; z-index:30;
+        }
+        .step {
+            display:flex;
+            align-items:center;
+            gap:6px;
+            padding:8px 12px;
+            border:1px solid var(--line);
+            border-radius:20px;
+            cursor:pointer;
+            background:white;
+        }
+        .step.active { border-color:var(--brand); background:#eaf8f1; }
+        .step.done { border-color:#b4e2cd; }
+
+        .idx {
+            width:20px; height:20px;
+            border-radius:50%;
+            border:2px solid var(--brand);
+            display:grid;
+            place-items:center;
+            font-size:12px;
+            font-weight:bold;
+            color:var(--brand);
+        }
+        .step.done .idx {
+            background:var(--brand);
+            color:white;
+        }
+
+        /* CARDS */
+        .card {
+            background:white;
+            padding:18px;
+            border-radius:10px;
+            border:1px solid var(--line);
+            margin-bottom:20px;
+        }
+
+        /* FORM */
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        input {
+            padding:10px;
+            border:1px solid #ccc;
+            border-radius:6px;
+        }
+        .btn {
+            background:var(--brand);
+            border:none;
+            color:white;
+            padding:10px 16px;
+            border-radius:6px;
+            margin-top:12px;
+            cursor:pointer;
+        }
+
+        /* DECISION TREE */
+        .tree { display:flex; flex-direction:column; gap:12px; }
+        .options { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .option {
+            border:1px solid #cfdad7;
+            padding:12px;
+            border-radius:8px;
+            cursor:pointer;
+            background:white;
+        }
+        .option:hover { border-color:var(--brand); }
+
+        .crumbs { display:flex; flex-wrap:wrap; gap:6px; }
+        .crumb {
+            background:#ecf8f2;
+            border:1px solid #cbeada;
+            padding:5px 10px;
+            border-radius:999px;
+            font-size:12px;
+        }
+
+        .outcome {
+            border-left:4px solid var(--brand);
+            background:#f3fbf6;
+            padding:12px;
+            border-radius:6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="navbar">Elektronische Gesundheitskarte</div>
+
+<div class="stepper" id="stepper"></div>
+
+<div class="wrap">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar"></div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main">
+
+        <!-- START -->
+        <section id="start" class="card">
+            <h2>Aktuelle Gesundheitskarte</h2>
+            <p>Platzhalter für Kartenbilder.</p>
+        </section>
+
+        <!-- ADDRESS -->
+        <section id="address" class="card">
+            <h2>Adresse prüfen</h2>
+            <div class="grid-2">
+                <input id="str" placeholder="Straße">
+                <input id="num" placeholder="Hausnummer">
+                <input id="plz" placeholder="PLZ">
+                <input id="ort" placeholder="Ort">
+            </div>
+            <button class="btn" onclick="completeStep('address')">Adresse bestätigen</button>
+        </section>
+
+        <!-- DECISION TREE -->
+        <section id="tree" class="card">
+            <h2>Entscheidungsbaum: Brauche ich eine neue Karte?</h2>
+
+            <div class="tree">
+                <div id="crumbs" class="crumbs"></div>
+                <div id="question"></div>
+                <div id="options" class="options"></div>
+                <div id="outcome" class="outcome" style="display:none"></div>
+
+                <button onclick="treeBack()" class="btn" style="background:#ccc;color:black;">Zurück</button>
+                <button onclick="treeReset()" class="btn" style="background:#999;">Reset Baum</button>
+            </div>
+
+            <button class="btn" onclick="completeStep('tree')">Weiter</button>
+        </section>
+
+        <!-- PHOTO -->
+        <section id="photo" class="card">
+            <h2>Foto</h2>
+            <p>Foto erforderlich? Bitte hier hochladen (Platzhalter).</p>
+            <button class="btn" onclick="photoUploaded=true; completeStep('photo')">Foto hochgeladen</button>
+        </section>
+
+        <!-- REVIEW -->
+        <section id="review" class="card">
+            <h2>Überblick</h2>
+            <pre id="summary"></pre>
+            <button class="btn" onclick="completeStep('review')">Absenden</button>
+        </section>
+
+        <!-- DONE -->
+        <section id="done" class="card">
+            <h2>Fertig</h2>
+            <p>Ihr Antrag wurde erfolgreich übermittelt.</p>
+        </section>
+
+    </div>
+</div>
+
+<script>
+    /* -----------------------------------------
+       PROCESS STEPS
+    ------------------------------------------*/
+    const steps = [
+        { id:"start", title:"Start" },
+        { id:"address", title:"Adresse" },
+        { id:"tree", title:"Entscheidungsbaum" },
+        { id:"photo", title:"Foto" },
+        { id:"review", title:"Überblick" },
+        { id:"done", title:"Fertig" }
+    ];
+
+    let current = "start";
+    let done = new Set();
+    let address = {};
+    let photoUploaded = false;
+    let finalOutcome = null;
+
+    /* Render stepper */
+    function renderStepper(){
+        const s = document.getElementById("stepper");
+        s.innerHTML = "";
+        steps.forEach((step,idx) => {
+            const div = document.createElement("div");
+            div.className = "step " +
+                (current===step.id ? "active " : "") +
+                (done.has(step.id) ? "done" : "");
+            div.onclick = () => goto(step.id);
+            div.innerHTML = `<div class="idx">${idx+1}</div> ${step.title}`;
+            s.appendChild(div);
+        });
+    }
+
+    /* Sidebar menu */
+    function renderSidebar(){
+        const sb = document.getElementById("sidebar");
+        sb.innerHTML = "<h3>Navigation</h3>";
+        steps.forEach((st,i)=>{
+            const b=document.createElement("button");
+            b.textContent = `${i+1}. ${st.title}`;
+            b.onclick = ()=>goto(st.id);
+            sb.appendChild(b);
+        });
+    }
+
+    function goto(id){
+        current = id;
+        renderStepper();
+        document.getElementById(id).scrollIntoView({behavior:'smooth'});
+    }
+
+    function completeStep(id){
+        done.add(id);
+        if(id==="address"){
+            address = {
+                str:document.getElementById("str").value,
+                num:document.getElementById("num").value,
+                plz:document.getElementById("plz").value,
+                ort:document.getElementById("ort").value,
+            };
+        }
+        if(id==="review"){
+            done.add("done");
+        }
+        updateSummary();
+
+        const idx = steps.findIndex(s=>s.id===id);
+        goto(steps[Math.min(idx+1, steps.length-1)].id);
+    }
+
+    function updateSummary(){
+        document.getElementById("summary").textContent = JSON.stringify({
+            address,
+            outcome: finalOutcome,
+            photoUploaded
+        }, null, 2);
+    }
+
+    /* -----------------------------------------
+       DECISION TREE ENGINE
+    ------------------------------------------*/
+    const TREE = {
+        why: {
+            text:"Warum benötigen Sie eine neue eGK?",
+            options:[
+                {label:"Verlust", next:"lost"},
+                {label:"Defekt", next:"defect"},
+                {label:"Namensänderung", next:"name"},
+                {label:"Ablauf", next:"expire"},
+                {label:"Erstkarte", next:"first"}
+            ]
+        },
+        lost:{
+            text:"Soll die alte Karte gesperrt werden?",
+            options:[
+                {label:"Ja", next:"photo_lost"},
+                {label:"Nein", next:"photo_lost"}
+            ]
+        },
+        photo_lost:{
+            text:"Ist ein Foto vorhanden?",
+            options:[
+                {label:"Ja", next:"o_lost_yes"},
+                {label:"Nein", next:"o_lost_no"}
+            ]
+        },
+
+        /* outcomes */
+        o_lost_yes:{ outcome:true, text:"Neue Karte wird produziert. Foto ist vorhanden." },
+        o_lost_no:{ outcome:true, text:"Bitte Foto hochladen." }
+    };
+
+    let node = "why";
+    let stack = [];
+
+    function renderTree(){
+        const n = TREE[node];
+        document.getElementById("crumbs").innerHTML = stack
+            .map((s,i)=>`<div class='crumb'>${i+1}. ${TREE[s].text}</div>`)
+            .join("");
+
+        if(n.outcome){
+            document.getElementById("question").textContent = "Ergebnis";
+            document.getElementById("options").innerHTML = "";
+            document.getElementById("outcome").style.display="block";
+            document.getElementById("outcome").textContent = n.text;
+            finalOutcome = n.text;
+            return;
+        }
+
+        document.getElementById("outcome").style.display="none";
+        document.getElementById("question").textContent = n.text;
+
+        document.getElementById("options").innerHTML = n.options
+            .map(o=>`<button class='option' onclick='choose("${o.next}")'>${o.label}</button>`)
+            .join("");
+    }
+
+    function choose(next){
+        stack.push(node);
+        node = next;
+        renderTree();
+    }
+
+    function treeBack(){
+        if(stack.length===0) return;
+        node = stack.pop();
+        finalOutcome = null;
+        renderTree();
+    }
+
+    function treeReset(){
+        node="why";
+        stack=[];
+        finalOutcome=null;
+        renderTree();
+    }
+
+    /* INIT */
+    renderStepper();
+    renderSidebar();
+    renderTree();
+    updateSummary();
+
+</script>
+
+</body>
+</html>

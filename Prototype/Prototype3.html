@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <title>eGK-Antrag – Wizard</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f7f8fa;
+            color: #003b2a;
+        }
+
+        header {
+            background: white;
+            padding: 20px 40px;
+            border-bottom: 1px solid #d2d5d9;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .wizard {
+            width: 60%;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d2d5d9;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 14px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .primary {
+            background: #007a5a;
+            color: white;
+        }
+
+        .primary:hover {
+            background: #005c44;
+        }
+
+        .secondary {
+            background: #d2d5d9;
+        }
+
+        .step-title {
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+
+        .option {
+            background: #eef7f3;
+            padding: 15px;
+            border-left: 4px solid #007a5a;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .process-box {
+            background: #fffbea;
+            padding: 15px;
+            border-left: 4px solid #f2c200;
+            margin-top: 15px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<header>AOK PLUS – Elektronische Gesundheitskarte</header>
+
+<div class="wizard">
+
+    <h1>eGK Antrag</h1>
+
+    <!-- STEP 1 -->
+    <div class="step active" id="step1">
+        <div class="step-title">1. Adresse prüfen</div>
+
+        <div class="input-row">
+            <input id="strasse" placeholder="Straße">
+            <input id="hausnr" placeholder="Hausnummer">
+        </div>
+
+        <div class="input-row">
+            <input id="plz" placeholder="PLZ">
+            <input id="ort" placeholder="Ort">
+        </div>
+
+        <button class="primary" onclick="nextStep(2)">Weiter</button>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step" id="step2">
+        <div class="step-title">2. Grund für neue eGK auswählen</div>
+
+        <div class="option" onclick="selectReason('Verlust')">Verlust</div>
+        <div class="option" onclick="selectReason('Defekt')">Defekt</div>
+        <div class="option" onclick="selectReason('Namensänderung')">Namensänderung</div>
+        <div class="option" onclick="selectReason('Diebstahl')">Diebstahl</div>
+
+        <button class="secondary" onclick="nextStep(1)">Zurück</button>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step" id="step3">
+        <div class="step-title">3. Foto hochladen</div>
+
+        <p>Bitte laden Sie Ihr Lichtbild hoch:</p>
+
+        <input type="file" id="fotoUpload">
+
+        <button class="secondary" onclick="nextStep(2)">Zurück</button>
+        <button class="primary" onclick="nextStep(4)">Weiter</button>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step" id="step4">
+        <div class="step-title">4. Zusammenfassung</div>
+
+        <p><strong>Adresse:</strong></p>
+        <p id="summary-address"></p>
+
+        <p><strong>Grund:</strong> <span id="summary-reason"></span></p>
+
+        <p><strong>Prozess laut Domain Story:</strong></p>
+
+        <div class="process-box">Adresse geprüft</div>
+        <div class="process-box">Grund ausgewählt</div>
+        <div class="process-box">Foto-Upload durchgeführt</div>
+        <div class="process-box">eGK-Herstellauftrag wird generiert</div>
+
+        <button class="secondary" onclick="nextStep(3)">Zurück</button>
+        <button class="primary" onclick="submit()">Antrag absenden</button>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step" id="step5">
+        <div class="step-title">🎉 Antrag erfolgreich eingereicht</div>
+
+        <p>Ihre neue elektronische Gesundheitskarte wird produziert und in Kürze versendet.</p>
+    </div>
+
+</div>
+
+<script>
+    let selectedReason = null;
+
+    // Navigation
+    function nextStep(stepNumber) {
+        document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
+        document.getElementById("step" + stepNumber).classList.add("active");
+
+        if (stepNumber === 4) updateSummary();
+    }
+
+    // Select reason
+    function selectReason(reason) {
+        selectedReason = reason;
+        nextStep(3);
+    }
+
+    // Summary before sending
+    function updateSummary() {
+        document.getElementById("summary-address").innerText =
+            `${strasse.value} ${hausnr.value}, ${plz.value} ${ort.value}`;
+        document.getElementById("summary-reason").innerText = selectedReason;
+    }
+
+    // Final submit
+    function submit() {
+        nextStep(5);
+    }
+</script>
+
+</body>
+</html>

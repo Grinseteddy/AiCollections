@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <title>Elektronische Gesundheitskarte – Webapp Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f3f5f7;
+            color: #222;
+        }
+
+        /* Header (AOK-like) */
+        header {
+            background: #008c3e;
+            color: #fff;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        header .brand {
+            display: flex;
+            flex-direction: column;
+        }
+
+        header .brand .title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        header .brand .subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        header .nav {
+            display: flex;
+            gap: 18px;
+            font-size: 13px;
+        }
+
+        header .nav span {
+            cursor: pointer;
+        }
+
+        header .session {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* Layout */
+        .layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 16px;
+            padding: 16px 24px 32px;
+        }
+
+        /* Left sidebar: navigation + glossary */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            padding: 16px 18px;
+        }
+
+        .card h2 {
+            margin: 0 0 8px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .card h3 {
+            margin: 12px 0 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .card p {
+            margin: 4px 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .nav-list li {
+            padding: 6px 0;
+            cursor: pointer;
+            color: #006699;
+        }
+
+        .nav-list li:hover {
+            text-decoration: underline;
+        }
+
+        /* Glossary list */
+        .glossary-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .glossary-list li {
+            padding: 6px 4px;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .glossary-list li span.key {
+            font-weight: 600;
+        }
+
+        .glossary-list li span.type {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .glossary-list li:hover {
+            background: #f0f6ff;
+        }
+
+        .glossary-detail {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 3px;
+            background: #f7f9fb;
+            border: 1px solid #dde3ea;
+            font-size: 12px;
+        }
+
+        .glossary-detail h4 {
+            margin: 0 0 6px;
+            font-size: 13px;
+        }
+
+        .glossary-detail ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        /* Main content */
+        .main {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .breadcrumb {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: -4px;
+        }
+
+        .breadcrumb span {
+            color: #006699;
+            cursor: pointer;
+        }
+
+        .breadcrumb span:hover {
+            text-decoration: underline;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 0 0 4px;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: #555;
+            margin: 0 0 12px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 8px;
+        }
+
+        .section-text {
+            font-size: 13px;
+            margin: 0 0 12px;
+        }
+
+        /* Address form */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px 16px;
+            max-width: 520px;
+            margin-bottom: 16px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+        }
+
+        .form-field label {
+            margin-bottom: 2px;
+        }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            padding: 6px 8px;
+            border-radius: 3px;
+            border: 1px solid #c5ccd4;
+            font-size: 13px;
+        }
+
+        .form-field input:disabled {
+            background: #f5f5f5;
+            color: #555;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        /* Buttons */
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+            margin-bottom: 4px;
+        }
+
+        .btn-primary {
+            background: #008c3e;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            padding: 8px 16px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: #008c3e;
+            border: 1px solid #008c3e;
+            border-radius: 3px;
+            padding: 8px 16px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            background: #e6f4ea;
+            color: #1b5e20;
+            margin-left: 6px;
+        }
+
+        .badge-status {
+            background: #e3f2fd;
+            color: #0d47a1;
+        }
+
+        /* Domain story stepper */
+        .stepper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .step-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #c5ccd4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            background: #fff;
+            flex-shrink: 0;
+        }
+
+        .step-circle.active {
+            border-color: #008c3e;
+            background: #008c3e;
+            color: #fff;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .step-meta {
+            font-size: 11px;
+            color: #777;
+        }
+
+        /* Status panel */
+        .status-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        .status-box {
+            border-radius: 4px;
+            border: 1px solid #dde3ea;
+            background: #f7f9fb;
+            padding: 10px 12px;
+        }
+
+        .status-box h4 {
+            margin: 0 0 4px;
+            font-size: 13px;
+        }
+
+        .status-box p {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+
+        .status-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: #777;
+        }
+
+        .status-value {
+            font-weight: 600;
+        }
+
+        .status-ok {
+            color: #1b5e20;
+        }
+
+        .status-warn {
+            color: #e65100;
+        }
+
+        .status-error {
+            color: #b71c1c;
+        }
+
+        /* Small screen */
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="brand">
+        <span class="title">AOK PLUS</span>
+        <span class="subtitle">Ihre Gesundheitskasse</span>
+    </div>
+    <div class="nav">
+        <span>Dokumente</span>
+        <span>Mitgliedschaft</span>
+        <span>Leistungen</span>
+        <span>Konto</span>
+        <span>Postfach</span>
+        <span>Kontakt</span>
+    </div>
+    <div class="session">
+        Sitzungsende in 11:32 min
+    </div>
+</header>
+
+<div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="card">
+            <h2>Mitgliedschaft</h2>
+            <ul class="nav-list">
+                <li>Stammdaten</li>
+                <li>Beiträge</li>
+                <li><strong>Gesundheitskarte</strong></li>
+                <li>Bescheinigungen</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>Visual Glossary</h2>
+            <p>Wählen Sie ein Element, um die Datenstruktur zu sehen.</p>
+            <ul class="glossary-list" id="glossaryList">
+                <li data-key="card">
+                    <span class="key">Karte (eGK/HIC)</span>
+                    <span class="type">Entity</span>
+                </li>
+                <li data-key="application">
+                    <span class="key">Antrag</span>
+                    <span class="type">Entity</span>
+                </li>
+                <li data-key="insurant">
+                    <span class="key">Versicherter</span>
+                    <span class="type">Entity</span>
+                </li>
+                <li data-key="photo">
+                    <span class="key">Lichtbild</span>
+                    <span class="type">Value Object</span>
+                </li>
+                <li data-key="status">
+                    <span class="key">Status</span>
+                    <span class="type">Enum</span>
+                </li>
+            </ul>
+            <div class="glossary-detail" id="glossaryDetail">
+                <h4>Glossar</h4>
+                <p>Hier werden die Attribute des ausgewählten Elements angezeigt.</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+        <div>
+            <div class="breadcrumb">
+                <span>Mitgliedschaft</span> &gt; <span>Gesundheitskarte</span>
+            </div>
+            <h1 class="page-title">Elektronische Gesundheitskarte</h1>
+            <p class="page-subtitle">Ihre aktuelle Gesundheitskarte und Antrag auf Ersatzkarte.</p>
+        </div>
+
+        <div class="card">
+            <h2>Ihre aktuelle Gesundheitskarte</h2>
+            <p class="section-text">
+                Prüfen Sie bitte Ihre Adresse und geben Sie den Grund für die neue Karte an.
+            </p>
+
+            <h3>Adresse prüfen</h3>
+            <p class="section-text">
+                Bitte überprüfen Sie, ob die folgende Adresse richtig ist. Falls die angezeigte Adresse nicht korrekt ist,
+                aktualisieren Sie bitte erst die Adresse, bevor Sie eine neue Karte beantragen.
+            </p>
+
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="street">Straße</label>
+                    <input id="street" type="text" value="Musterstraße" />
+                </div>
+                <div class="form-field">
+                    <label for="houseNumber">Hausnummer</label>
+                    <input id="houseNumber" type="text" value="43" />
+                </div>
+                <div class="form-field">
+                    <label for="zip">PLZ</label>
+                    <input id="zip" type="text" value="01234" />
+                </div>
+                <div class="form-field">
+                    <label for="city">Ort</label>
+                    <input id="city" type="text" value="Musterstadt" />
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn-secondary" id="validateAddressBtn">Adresse prüfen</button>
+                <span id="addressStatus" class="hint"></span>
+            </div>
+
+            <hr style="border:none;border-top:1px solid #e0e4ea;margin:16px 0;" />
+
+            <h3>Grund für neue Gesundheitskarte</h3>
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+                <div class="form-field">
+                    <label for="reasonSelect">Gewählter Grund</label>
+                    <select id="reasonSelect">
+                        <option value="">Bitte wählen…</option>
+                        <option value="lost">Karte verloren</option>
+                        <option value="defect">Karte defekt</option>
+                        <option value="stolen">Karte gestohlen</option>
+                        <option value="image">Neues Lichtbild</option>
+                        <option value="other">Sonstiger Grund</option>
+                    </select>
+                    <div class="hint">Für Versicherte unter 15 Jahren gelten besondere Regeln für das Lichtbild.</div>
+                </div>
+                <div class="form-field">
+                    <label for="reasonText">Freitext (optional)</label>
+                    <textarea id="reasonText" rows="2" placeholder="Zusätzliche Hinweise zum Grund"></textarea>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn-primary" id="submitApplicationBtn" disabled>Neue Karte beantragen</button>
+                <span id="applicationHint" class="hint">Adresse muss gültig sein und ein Grund ausgewählt werden.</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Prozess &amp; Status</h2>
+            <p class="section-text">
+                Basierend auf der Domain Story sehen Sie hier den Ablauf Ihres Antrags und den Status von Antrag und Karte.
+            </p>
+
+            <div class="stepper">
+                <div class="step">
+                    <div class="step-circle" id="step1Circle">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Versicherter stellt Antrag im Portal</div>
+                        <div class="step-meta">Antrag-Status: Neu &rarr; In Bearbeitung</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-circle" id="step2Circle">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Adresse &amp; Stammdaten werden geprüft</div>
+                        <div class="step-meta">Adressvalidierung, Versicherter, KV-Nummer, Lichtbild</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-circle" id="step3Circle">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Karte wird im HIC-System erzeugt</div>
+                        <div class="step-meta">Karten-ID, Kartennummer, Ablaufdatum, Status = Beantragt/Gültig</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-circle" id="step4Circle">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Benachrichtigung &amp; Sendung an Versicherte</div>
+                        <div class="step-meta">Nachricht, Versand, Prozessverfolgung im Portal</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-panel">
+                <div class="status-box">
+                    <h4>Antrag</h4>
+                    <p class="status-label">Status</p>
+                    <p class="status-value" id="applicationStatus">Kein Antrag vorhanden</p>
+                    <p class="status-label">Grund</p>
+                    <p id="applicationReason">–</p>
+                    <p class="status-label">Erhalten am</p>
+                    <p id="applicationReceived">–</p>
+                    <p class="status-label">Aktualisiert</p>
+                    <p id="applicationUpdated">–</p>
+                </div>
+
+                <div class="status-box">
+                    <h4>Karte</h4>
+                    <p class="status-label">Status</p>
+                    <p class="status-value" id="cardStatus">Gültig</p>
+                    <p class="status-label">Kartennummer</p>
+                    <p id="cardNumber">************1234</p>
+                    <p class="status-label">Ablaufdatum</p>
+                    <p id="cardExpiry">31.12.2029</p>
+                    <p class="status-label">Lichtbild gültig bis</p>
+                    <p id="photoExpiry">31.12.2034</p>
+                </div>
+
+                <div class="status-box">
+                    <h4>Hinweise</h4>
+                    <p>• Karten sind i. d. R. 5 Jahre gültig.</p>
+                    <p>• Lichtbilder können bis zu 10 Jahre genutzt werden.</p>
+                    <p>• Keine Anträge für Familienmitglieder über dieses Portal.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // --- Visual Glossary data ---
+    const glossaryData = {
+        card: {
+            title: "Karte (eGK/HIC)",
+            description: "Repräsentiert die physische oder elektronische Gesundheitskarte.",
+            attributes: [
+                "Karten-ID (GUID)",
+                "Versicherter (GUID)",
+                "KV-Nummer [A-Z][0-9-9]{9}",
+                "Kartennummer [0-9]{20}",
+                "Korrespondierende Dokumenten-ID (EHIC_ID, optional)",
+                "Ablaufdatum (validity to date)",
+                "Status: Beantragt, Gültig, Ungültig",
+                "Lichtbild (Dokument-ID, Gültig bis)"
+            ]
+        },
+        application: {
+            title: "Antrag",
+            description: "Antrag auf Ausstellung oder Ersatz einer Gesundheitskarte.",
+            attributes: [
+                "Antrag-Identifier",
+                "Versicherter (GUID)",
+                "Lichtbild",
+                "Grund (Notwendigkeit, gewählter Grund, Freitext)",
+                "Status: Neu, In Bearbeitung, Versendet, Abgelehnt",
+                "Nachricht",
+                "Karte (GUID)",
+                "Erhalten am",
+                "Aktualisiert am"
+            ]
+        },
+        insurant: {
+            title: "Versicherter",
+            description: "Die versicherte Person, für die die Karte ausgestellt wird.",
+            attributes: [
+                "Name",
+                "Adresse",
+                "Geburtsdatum",
+                "KV-Nummer",
+                "Kontaktinformationen"
+            ]
+        },
+        photo: {
+            title: "Lichtbild",
+            description: "Foto des Versicherten für die Gesundheitskarte.",
+            attributes: [
+                "Dokument-ID",
+                "Gültig bis",
+                "Format- und Qualitätsanforderungen",
+                "Sonderregeln für Versicherte unter 15 Jahren"
+            ]
+        },
+        status: {
+            title: "Status",
+            description: "Statuswerte für Antrag und Karte.",
+            attributes: [
+                "Antrag: Neu, In Bearbeitung, Versendet, Abgelehnt",
+                "Karte: Beantragt, Gültig, Ungültig"
+            ]
+        }
+    };
+
+    const glossaryList = document.getElementById("glossaryList");
+    const glossaryDetail = document.getElementById("glossaryDetail");
+
+    glossaryList.addEventListener("click", (e) => {
+        const li = e.target.closest("li[data-key]");
+        if (!li) return;
+        const key = li.getAttribute("data-key");
+        const item = glossaryData[key];
+        if (!item) return;
+
+        glossaryDetail.innerHTML = `
+      <h4>${item.title}</h4>
+      <p>${item.description}</p>
+      <ul>${item.attributes.map(a => `<li>${a}</li>`).join("")}</ul>
+    `;
+    });
+
+    // --- Address validation & application flow ---
+    const validateAddressBtn = document.getElementById("validateAddressBtn");
+    const addressStatus = document.getElementById("addressStatus");
+    const submitApplicationBtn = document.getElementById("submitApplicationBtn");
+    const reasonSelect = document.getElementById("reasonSelect");
+    const reasonText = document.getElementById("reasonText");
+    const applicationHint = document.getElementById("applicationHint");
+
+    let addressValid = false;
+
+    function updateSubmitState() {
+        const reasonSelected = reasonSelect.value !== "";
+        submitApplicationBtn.disabled = !(addressValid && reasonSelected);
+        if (!addressValid) {
+            applicationHint.textContent = "Adresse muss gültig sein und ein Grund ausgewählt werden.";
+        } else if (!reasonSelected) {
+            applicationHint.textContent = "Bitte wählen Sie einen Grund für die neue Karte.";
+        } else {
+            applicationHint.textContent = "Sie können den Antrag jetzt absenden.";
+        }
+    }
+
+    validateAddressBtn.addEventListener("click", () => {
+        // Simple demo validation: all fields non-empty
+        const street = document.getElementById("street").value.trim();
+        const houseNumber = document.getElementById("houseNumber").value.trim();
+        const zip = document.getElementById("zip").value.trim();
+        const city = document.getElementById("city").value.trim();
+
+        if (street && houseNumber && zip && city) {
+            addressValid = true;
+            addressStatus.textContent = "Adresse wurde erfolgreich geprüft.";
+            addressStatus.style.color = "#1b5e20";
+        } else {
+            addressValid = false;
+            addressStatus.textContent = "Bitte füllen Sie alle Adressfelder aus.";
+            addressStatus.style.color = "#b71c1c";
+        }
+        updateSubmitState();
+    });
+
+    reasonSelect.addEventListener("change", updateSubmitState);
+    reasonText.addEventListener("input", () => { /* could be used later */ });
+
+    // --- Status & Domain Story stepper ---
+    const applicationStatusEl = document.getElementById("applicationStatus");
+    const applicationReasonEl = document.getElementById("applicationReason");
+    const applicationReceivedEl = document.getElementById("applicationReceived");
+    const applicationUpdatedEl = document.getElementById("applicationUpdated");
+
+    const cardStatusEl = document.getElementById("cardStatus");
+    const cardNumberEl = document.getElementById("cardNumber");
+    const cardExpiryEl = document.getElementById("cardExpiry");
+    const photoExpiryEl = document.getElementById("photoExpiry");
+
+    const step1Circle = document.getElementById("step1Circle");
+    const step2Circle = document.getElementById("step2Circle");
+    const step3Circle = document.getElementById("step3Circle");
+    const step4Circle = document.getElementById("step4Circle");
+
+    function setActiveSteps(count) {
+        [step1Circle, step2Circle, step3Circle, step4Circle].forEach((el, idx) => {
+            if (idx < count) {
+                el.classList.add("active");
+            } else {
+                el.classList.remove("active");
+            }
+        });
+    }
+
+    function formatNow() {
+        const d = new Date();
+        return d.toLocaleDateString("de-DE") + " " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    submitApplicationBtn.addEventListener("click", () => {
+        const reasonValue = reasonSelect.value;
+        const reasonLabel = reasonSelect.options[reasonSelect.selectedIndex].text;
+        const freeText = reasonText.value.trim();
+
+        // Step 1: Antrag erstellt
+        applicationStatusEl.textContent = "Neu";
+        applicationReasonEl.textContent = freeText ? `${reasonLabel} – ${freeText}` : reasonLabel;
+        const now = formatNow();
+        applicationReceivedEl.textContent = now;
+        applicationUpdatedEl.textContent = now;
+        setActiveSteps(1);
+
+        // Simulate progression through the domain story
+        setTimeout(() => {
+            applicationStatusEl.textContent = "In Bearbeitung";
+            applicationUpdatedEl.textContent = formatNow();
+            setActiveSteps(2);
+        }, 1000);
+
+        setTimeout(() => {
+            // Card created
+            applicationStatusEl.textContent = "Versendet";
+            applicationUpdatedEl.textContent = formatNow();
+            cardStatusEl.textContent = "Beantragt";
+            cardNumberEl.textContent = "************5678";
+            cardExpiryEl.textContent = "31.12.2031";
+            photoExpiryEl.textContent = "31.12.2036";
+            setActiveSteps(3);
+        }, 2000);
+
+        setTimeout(() => {
+            // Card active
+            cardStatusEl.textContent = "Gültig";
+            applicationUpdatedEl.textContent = formatNow();
+            setActiveSteps(4);
+        }, 3000);
+    });
+
+    // Initial state
+    updateSubmitState();
+</script>
+</body>
+</html>
