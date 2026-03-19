@@ -1,0 +1,1 @@
+Create events for an EventStorming based on the provided Domain Storytelling map.

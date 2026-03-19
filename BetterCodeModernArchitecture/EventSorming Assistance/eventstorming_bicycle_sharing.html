@@ -1,0 +1,90 @@
+
+<style>
+.es-wrap { padding: 14px 0 8px; font-family: var(--font-sans); }
+.es-toolbar { display: flex; align-items: center; gap: 8px; padding: 0 16px 12px; flex-wrap: wrap; }
+.es-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-right: 4px; }
+.es-btn { padding: 4px 11px; border-radius: 5px; border: 1.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); font-size: 11px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.es-btn.on { background: var(--color-background-secondary); color: var(--color-text-primary); border-color: var(--color-border-primary); }
+.es-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; }
+.es-leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--color-text-secondary); }
+.es-leg-dot { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }
+.es-board { overflow-x: auto; padding: 0 16px 8px; }
+.es-track { display: flex; align-items: flex-end; gap: 0; min-width: max-content; padding-bottom: 4px; }
+.es-arrow { font-size: 16px; color: var(--color-text-tertiary); padding: 0 3px; margin-bottom: 36px; flex-shrink: 0; user-select: none; }
+.es-col { display: flex; flex-direction: column; align-items: stretch; gap: 5px; width: 118px; flex-shrink: 0; }
+.es-bc { font-size: 9px; font-weight: 500; padding: 4px 6px; border-radius: 4px; text-align: center; letter-spacing: .03em; text-transform: uppercase; line-height: 1.3; }
+.es-actor { font-size: 10px; padding: 4px 6px; border-radius: 4px; text-align: center; background: #FFF176; color: #4A3B00; border: 1px solid #D4C000; line-height: 1.2; }
+.es-cmd { font-size: 10px; padding: 6px 8px; border-radius: 4px; text-align: center; background: #5B8FF9; color: #E8F2FF; border: 1px solid #3366E6; line-height: 1.3; min-height: 38px; display: flex; align-items: center; justify-content: center; }
+.es-evt { font-size: 10px; font-weight: 500; padding: 8px; border-radius: 4px; text-align: center; background: #FF9900; color: #4A2300; border: 1px solid #D97000; line-height: 1.4; min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+.es-num { position: absolute; top: 3px; left: 6px; font-size: 9px; font-weight: 400; opacity: 0.55; }
+.hidden { display: none !important; }
+.bc-dist { background: #FEF0D8; color: #7A4200; border-bottom: 2px solid #F59E0B; }
+.bc-user { background: #E0F5F2; color: #0A5244; border-bottom: 2px solid #14B8A6; }
+.bc-acc  { background: #E5F5E0; color: #1A5E08; border-bottom: 2px solid #22C55E; }
+.bc-book { background: #F0EAFC; color: #4A1D7A; border-bottom: 2px solid #8B5CF6; }
+.bc-rack { background: #FDEAEA; color: #7A1010; border-bottom: 2px solid #EF4444; }
+.bc-ride { background: #E6EEFE; color: #0D2E7A; border-bottom: 2px solid #3B82F6; }
+</style>
+<div class="es-wrap">
+  <div class="es-toolbar">
+    <span class="es-title">EventStorming board</span>
+    <button class="es-btn on" id="btn-actor" onclick="toggle('actor')">Actors</button>
+    <button class="es-btn on" id="btn-cmd"   onclick="toggle('cmd')">Commands</button>
+    <div class="es-legend">
+      <div class="es-leg"><div class="es-leg-dot" style="background:#FF9900;border:1px solid #D97000"></div>Domain event</div>
+      <div class="es-leg"><div class="es-leg-dot" style="background:#5B8FF9;border:1px solid #3366E6"></div>Command</div>
+      <div class="es-leg"><div class="es-leg-dot" style="background:#FFF176;border:1px solid #D4C000"></div>Actor</div>
+    </div>
+  </div>
+  <div class="es-board">
+    <div class="es-track" id="track"></div>
+  </div>
+</div>
+<script>
+const steps = [
+  { n:1,  bc:'Bicycle distribution', cls:'bc-dist', actor:'Mechanic',  cmd:'Bring bicycle to rack',       evt:'Bicycle\nBrought to Rack' },
+  { n:2,  bc:'User management',      cls:'bc-user', actor:'Commuter',  cmd:'Register via App',             evt:'Commuter\nRegistered' },
+  { n:3,  bc:'Accounting',           cls:'bc-acc',  actor:'Commuter',  cmd:'Pay monthly fee via App',      evt:'Monthly Fee\nPaid' },
+  { n:4,  bc:'Bicycle distribution', cls:'bc-dist', actor:'Commuter',  cmd:'Search bicycle at station',    evt:'Bicycle\nSearched' },
+  { n:5,  bc:'Bicycle booking',      cls:'bc-book', actor:'Commuter',  cmd:'Book bicycle',                 evt:'Bicycle\nBooked' },
+  { n:6,  bc:'Rack management',      cls:'bc-rack', actor:'System',    cmd:'Issue unlock code',            evt:'Unlock Code\nIssued' },
+  { n:7,  bc:'Rack management',      cls:'bc-rack', actor:'Commuter',  cmd:'Unlock bicycle with code',     evt:'Bicycle\nUnlocked' },
+  { n:8,  bc:'Riding',               cls:'bc-ride', actor:'Commuter',  cmd:'Ride to destination',          evt:'Ride\nStarted' },
+  { n:9,  bc:'Bicycle distribution', cls:'bc-dist', actor:'Commuter',  cmd:'Return bicycle at rack',       evt:'Bicycle\nReturned' },
+  { n:10, bc:'Rack management',      cls:'bc-rack', actor:'Commuter',  cmd:'Confirm return via code',      evt:'Return\nConfirmed' }
+];
+
+function build() {
+  const t = document.getElementById('track');
+  t.innerHTML = '';
+  steps.forEach((s, i) => {
+    const col = document.createElement('div');
+    col.className = 'es-col';
+    col.innerHTML =
+      `<div class="es-bc ${s.cls}">${s.bc}</div>` +
+      `<div class="es-actor layer-actor">${s.actor}</div>` +
+      `<div class="es-cmd layer-cmd">${s.cmd}</div>` +
+      `<div class="es-evt"><span class="es-num">${s.n}</span>${s.evt.replace(/\n/g,'<br>')}</div>`;
+    t.appendChild(col);
+    if (i < steps.length - 1) {
+      const a = document.createElement('div');
+      a.className = 'es-arrow';
+      a.textContent = '→';
+      t.appendChild(a);
+    }
+  });
+  apply();
+}
+
+const state = { actor: true, cmd: true };
+function toggle(k) {
+  state[k] = !state[k];
+  document.getElementById('btn-' + k).classList.toggle('on', state[k]);
+  apply();
+}
+function apply() {
+  document.querySelectorAll('.layer-actor').forEach(e => e.classList.toggle('hidden', !state.actor));
+  document.querySelectorAll('.layer-cmd').forEach(e => e.classList.toggle('hidden', !state.cmd));
+}
+build();
+</script>
