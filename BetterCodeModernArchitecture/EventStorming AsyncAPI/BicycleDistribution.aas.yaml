@@ -1,0 +1,521 @@
+asyncapi: 3.0.0
+info:
+  title: Bicycle Distribution
+  version: 1.0.0
+  description: |
+    Events produced by the bicycle distribution service.
+    The service produces the following domain events:
+      - Bicycle Distributed
+      - Bicycle Searched
+      - Bicycle Booked
+      - Bicycle Returned
+      - Bicycle Picked Up
+  contact:
+    name: Bicycle Distribution Team
+    url: https://bicycle-sharing.org/sample
+    email: team@bicycle-sharing.org
+  x-api-id:
+    a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+servers:
+  event-broker-bicycle:
+    host: broker.bicycle-sharing.org:8092
+    protocol: kafka
+    description: Event broker of the bicycle sharing platform
+    security:
+      - $ref: '#/components/securitySchemes/user-password'
+    bindings:
+      kafka:
+        schemaRegistryUrl: 'https://bicycle-sharing-schema-registry.com'
+        schemaRegistryVendor: 'confluent'
+        bindingVersion: '0.5.0'
+
+channels:
+  BicycleDistributedChannel:
+    description: Channel where messages are stored when a bicycle was distributed to a rack by a mechanic
+    address: bicycle-distributed
+    messages:
+      BicycleDistributedEvent:
+        $ref: '#/components/messages/BicycleDistributedSend'
+    bindings:
+      kafka:
+        topic: 'bicycle-distributed-event-channel'
+        bindingVersion: '0.5.0'
+
+  BicycleSearchedChannel:
+    description: Channel where messages are stored when a commuter searched for available bicycles
+    address: bicycle-searched
+    messages:
+      BicycleSearchedEvent:
+        $ref: '#/components/messages/BicycleSearchedSend'
+    bindings:
+      kafka:
+        topic: 'bicycle-searched-event-channel'
+        bindingVersion: '0.5.0'
+
+  BicycleBookedChannel:
+    description: Channel where messages are stored when a commuter booked a bicycle
+    address: bicycle-booked
+    messages:
+      BicycleBookedEvent:
+        $ref: '#/components/messages/BicycleBookedSend'
+    bindings:
+      kafka:
+        topic: 'bicycle-booked-event-channel'
+        bindingVersion: '0.5.0'
+
+  BicycleReturnedChannel:
+    description: Channel where messages are stored when a commuter returned a bicycle to a rack
+    address: bicycle-returned
+    messages:
+      BicycleReturnedEvent:
+        $ref: '#/components/messages/BicycleReturnedSend'
+    bindings:
+      kafka:
+        topic: 'bicycle-returned-event-channel'
+        bindingVersion: '0.5.0'
+
+  BicyclePickedUpChannel:
+    description: Channel where messages are stored when a mechanic picked up a bicycle from a rack
+    address: bicycle-picked-up
+    messages:
+      BicyclePickedUpEvent:
+        $ref: '#/components/messages/BicyclePickedUpSend'
+    bindings:
+      kafka:
+        topic: 'bicycle-picked-up-event-channel'
+        bindingVersion: '0.5.0'
+
+operations:
+  BicycleDistributedSendOperation:
+    action: "send"
+    channel:
+      $ref: "#/channels/BicycleDistributedChannel"
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-bicycle-distributed-.*$
+
+  BicycleSearchedSendOperation:
+    action: "send"
+    channel:
+      $ref: "#/channels/BicycleSearchedChannel"
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-bicycle-searched-.*$
+
+  BicycleBookedSendOperation:
+    action: "send"
+    channel:
+      $ref: "#/channels/BicycleBookedChannel"
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-bicycle-booked-.*$
+
+  BicycleReturnedSendOperation:
+    action: "send"
+    channel:
+      $ref: "#/channels/BicycleReturnedChannel"
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-bicycle-returned-.*$
+
+  BicyclePickedUpSendOperation:
+    action: "send"
+    channel:
+      $ref: "#/channels/BicyclePickedUpChannel"
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-bicycle-picked-up-.*$
+
+
+components:
+  messages:
+    BicycleDistributedSend:
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/BicycleDistributedPayload'
+
+    BicycleSearchedSend:
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/BicycleSearchedPayload'
+
+    BicycleBookedSend:
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/BicycleBookedPayload'
+
+    BicycleReturnedSend:
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/BicycleReturnedPayload'
+
+    BicyclePickedUpSend:
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/BicyclePickedUpPayload'
+
+
+  schemas:
+
+    # ─── Domain Entities (from Visual Glossary) ───────────────────────────────
+
+    BicycleShort:
+      description: A bicycle in the bicycle sharing system
+      type: object
+      required:
+        - bicycleId
+      properties:
+        bicycleId:
+          description: Unique identifier of the bicycle
+          type: string
+          format: uuid
+          examples:
+            - a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        model:
+          description: Model name of the bicycle
+          type: string
+          minLength: 2
+          maxLength: 100
+          examples:
+            - City Cruiser 3000
+        status:
+          description: Current status of the bicycle
+          type: string
+          x-extensible-enum:
+            - AVAILABLE
+            - BOOKED
+            - IN_USE
+            - MAINTENANCE
+          examples:
+            - AVAILABLE
+
+    RackShort:
+      description: >
+        A rack where bicycles are stored,
+        located at a public transport station
+      type: object
+      required:
+        - rackId
+      properties:
+        rackId:
+          description: Unique identifier of the rack
+          type: string
+          format: uuid
+          examples:
+            - b2c3d4e5-f6a7-8901-bcde-f12345678901
+        stationName:
+          description: Name of the public transport station where the rack is located
+          type: string
+          minLength: 2
+          maxLength: 100
+          examples:
+            - Munich Central Station
+        capacity:
+          description: Total number of locks (and bicycle slots) in the rack
+          type: integer
+          minimum: 1
+          examples:
+            - 10
+        availableSlots:
+          description: Number of currently free slots in the rack
+          type: integer
+          minimum: 0
+          examples:
+            - 3
+
+    GeoData:
+      description: Geographical coordinates used for location-based bicycle search
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          description: Latitude coordinate of the search origin
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          examples:
+            - 48.1351
+        longitude:
+          description: Longitude coordinate of the search origin
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          examples:
+            - 11.5820
+        radiusMeters:
+          description: Search radius in meters around the given coordinates
+          type: integer
+          minimum: 100
+          maximum: 5000
+          examples:
+            - 500
+
+    CommuterShort:
+      description: A commuter who uses the bicycle sharing system
+      type: object
+      required:
+        - commuterId
+      properties:
+        commuterId:
+          description: Unique identifier of the commuter
+          type: string
+          format: uuid
+          examples:
+            - c3d4e5f6-a7b8-9012-cdef-123456789012
+        givenName:
+          description: Given name of the commuter
+          type: string
+          minLength: 2
+          maxLength: 55
+          examples:
+            - Jane
+        familyName:
+          description: Family name of the commuter
+          type: string
+          minLength: 2
+          maxLength: 55
+          examples:
+            - Doe
+
+    MechanicShort:
+      description: A mechanic responsible for distributing and collecting bicycles
+      type: object
+      required:
+        - mechanicId
+      properties:
+        mechanicId:
+          description: Unique identifier of the mechanic
+          type: string
+          format: uuid
+          examples:
+            - d4e5f6a7-b8c9-0123-defa-234567890123
+        givenName:
+          description: Given name of the mechanic
+          type: string
+          minLength: 2
+          maxLength: 55
+          examples:
+            - Max
+        familyName:
+          description: Family name of the mechanic
+          type: string
+          minLength: 2
+          maxLength: 55
+          examples:
+            - Mustermann
+
+    # ─── Event Payloads ───────────────────────────────────────────────────────
+
+    BicycleDistributedPayload:
+      description: >
+        Payload for the BicycleDistributed event.
+        Triggered when a mechanic places a bicycle into a rack at a public transport station.
+      type: object
+      required:
+        - bicycle
+        - rack
+        - mechanic
+        - distributedAt
+      properties:
+        bicycle:
+          $ref: '#/components/schemas/BicycleShort'
+        rack:
+          $ref: '#/components/schemas/RackShort'
+        mechanic:
+          $ref: '#/components/schemas/MechanicShort'
+        distributedAt:
+          description: Timestamp when the bicycle was distributed to the rack
+          type: string
+          format: date-time
+          examples:
+            - '2024-06-01T08:30:00Z'
+
+    BicycleSearchedPayload:
+      description: >
+        Payload for the BicycleSearched event.
+        Triggered when a commuter searches for available bicycles near a location.
+      type: object
+      required:
+        - commuter
+        - geoData
+        - searchedAt
+      properties:
+        commuter:
+          $ref: '#/components/schemas/CommuterShort'
+        geoData:
+          $ref: '#/components/schemas/GeoData'
+        availableRacks:
+          description: List of nearby racks with at least one available bicycle
+          type: array
+          minItems: 0
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/RackShort'
+        searchedAt:
+          description: Timestamp when the search was performed
+          type: string
+          format: date-time
+          examples:
+            - '2024-06-01T08:00:00Z'
+
+    BicycleBookedPayload:
+      description: >
+        Payload for the BicycleBooked event.
+        Triggered when a commuter successfully books a specific bicycle at a rack.
+      type: object
+      required:
+        - bicycle
+        - commuter
+        - rack
+        - bookedAt
+      properties:
+        bicycle:
+          $ref: '#/components/schemas/BicycleShort'
+        commuter:
+          $ref: '#/components/schemas/CommuterShort'
+        rack:
+          $ref: '#/components/schemas/RackShort'
+        bookedAt:
+          description: Timestamp when the bicycle was booked
+          type: string
+          format: date-time
+          examples:
+            - '2024-06-01T08:05:00Z'
+        bookingExpiresAt:
+          description: Timestamp when the booking expires if the bicycle is not picked up
+          type: string
+          format: date-time
+          examples:
+            - '2024-06-01T08:20:00Z'
+
+    BicycleReturnedPayload:
+      description: >
+        Payload for the BicycleReturned event.
+        Triggered when a commuter locks a bicycle back into a rack after a ride.
+      type: object
+      required:
+        - bicycle
+        - rack
+        - commuter
+        - returnedAt
+      properties:
+        bicycle:
+          $ref: '#/components/schemas/BicycleShort'
+        rack:
+          $ref: '#/components/schemas/RackShort'
+        commuter:
+          $ref: '#/components/schemas/CommuterShort'
+        returnedAt:
+          description: Timestamp when the bicycle was returned to the rack
+          type: string
+          format: date-time
+          examples:
+            - '2024-06-01T09:15:00Z'
+
+    BicyclePickedUpPayload:
+      description: >
+        Payload for the BicyclePickedUp event.
+        Triggered when a mechanic removes a bicycle from a rack for maintenance or redistribution.
+      type: object
+      required:
+        - bicycle
+        - mechanic
+        - pickedUpAt
+      properties:
+        bicycle:
+          $ref: '#/components/schemas/BicycleShort'
+        rack:
+          $ref: '#/components/schemas/RackShort'
+        mechanic:
+          $ref: '#/components/schemas/MechanicShort'
+        pickedUpAt:
+          description: Timestamp when the bicycle was picked up from the rack
+          type: string
+          format: date-time
+          examples:
+            - '2024-06-01T10:00:00Z'
+        reason:
+          description: Reason why the bicycle was picked up
+          type: string
+          x-extensible-enum:
+            - MAINTENANCE
+            - REDISTRIBUTION
+            - END_OF_LIFE
+          examples:
+            - MAINTENANCE
+
+    # ─── Message Header ───────────────────────────────────────────────────────
+
+    MessageHeader:
+      description: Header information for each message
+      type: object
+      required:
+        - correlationId
+        - messageId
+        - x-api-identifier
+        - x-api-version
+      properties:
+        correlationId:
+          description: Identifier to be set by application to trace end-to-end-api-journey
+          type: string
+          format: uuid
+          examples:
+            - b3416449-5f69-4cd2-a6c4-1ff82da96bce
+        messageId:
+          description: Identifier for the particular message, needed in case of cascading infrastructure
+          type: string
+          format: uuid
+          examples:
+            - 5a1d305b-19f3-46eb-ada1-9a9770e56fd1
+        x-api-identifier:
+          description: Identifier of the API used to create the message
+          type: string
+          format: uuid
+          default: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+          examples:
+            - a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        x-api-version:
+          description: Version of the API
+          type: string
+          x-extensible-enum:
+            - 1.0.0
+          default: 1.0.0
+          examples:
+            - 1.0.0
+        source:
+          description: Application name creating the message
+          type: string
+          minLength: 2
+          maxLength: 30
+          examples:
+            - BicycleDistribution
+
+  securitySchemes:
+    user-password:
+      type: userPassword
+      description: Security scheme for events
