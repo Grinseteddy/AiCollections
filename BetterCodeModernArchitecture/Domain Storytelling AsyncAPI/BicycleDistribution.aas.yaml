@@ -1,0 +1,354 @@
+asyncapi: 3.0.0
+info:
+  title: Bicycle Distribution
+  version: 1.0.0
+  description: |
+    Events produced and consumed by the Bicycle Distribution service.
+    The service produces the following domain events:
+      - Bicycle Added To Rack
+      - Bicycle Returned
+    The service consumes the following domain events:
+      - Bicycle Booked
+  contact:
+    name: Bicycle Distribution Team
+    url: https://bicycle-sharing.org/bicycle-distribution
+    email: bicycle-distribution@bicycle-sharing.org
+  x-api-id:
+    a3c7f821-9e4b-4d1a-bf62-dc4e2f8a1047
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  tags:
+    - name: Bicycle Distribution
+      description: All events produced and consumed by the Bicycle Distribution bounded context
+    - name: Bicycle Booking
+      description: Events consumed from the Bicycle Booking bounded context
+
+servers:
+  event-broker-bicycle-sharing:
+    host: broker.bicycle-sharing.org:9092
+    protocol: kafka
+    description: Event broker of the bicycle sharing platform
+    security:
+      - $ref: '#/components/securitySchemes/user-password'
+    bindings:
+      kafka:
+        schemaRegistryUrl: 'https://bicycle-sharing-schema-registry.com'
+        schemaRegistryVendor: 'confluent'
+        bindingVersion: '0.5.0'
+
+channels:
+  BicycleAddedToRackChannel:
+    description: >
+      Channel where messages are stored when a mechanic brings a bicycle to a rack.
+      This event is produced by the Bicycle Distribution bounded context.
+    address: bicycle-added-to-rack
+    messages:
+      BicycleAddedToRackEvent:
+        $ref: '#/components/messages/BicycleAddedToRackSend'
+    bindings:
+      kafka:
+        topic: 'bicycle-added-to-rack-event-channel'
+        bindingVersion: '0.5.0'
+
+  BicycleReturnedChannel:
+    description: >
+      Channel where messages are stored when a commuter returns a bicycle at a rack near their home.
+      This event is produced by the Bicycle Distribution bounded context.
+    address: bicycle-returned
+    messages:
+      BicycleReturnedEvent:
+        $ref: '#/components/messages/BicycleReturnedSend'
+    bindings:
+      kafka:
+        topic: 'bicycle-returned-event-channel'
+        bindingVersion: '0.5.0'
+
+  BicycleBookedChannel:
+    description: >
+      Channel where messages arrive when a commuter books a bicycle at a public transport station.
+      This event is consumed by the Bicycle Distribution bounded context from the Bicycle Booking bounded context.
+    address: bicycle-booked
+    messages:
+      BicycleBookedEvent:
+        $ref: '#/components/messages/BicycleBookedReceive'
+    bindings:
+      kafka:
+        topic: 'bicycle-booked-event-channel'
+        bindingVersion: '0.5.0'
+
+operations:
+  BicycleAddedToRackSendOperation:
+    description: >
+      Event sent by the Bicycle Distribution bounded context when a mechanic
+      brings a bicycle to a rack at a public transport station.
+    action: send
+    channel:
+      $ref: '#/channels/BicycleAddedToRackChannel'
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-bicycle-added-to-rack-.*$
+
+  BicycleReturnedSendOperation:
+    description: >
+      Event sent by the Bicycle Distribution bounded context when a commuter
+      returns a bicycle at a rack near their home.
+    action: send
+    channel:
+      $ref: '#/channels/BicycleReturnedChannel'
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-bicycle-returned-.*$
+
+  BicycleBookedReceiveOperation:
+    description: >
+      Event received by the Bicycle Distribution bounded context from the Bicycle Booking
+      bounded context when a commuter books a bicycle at a public transport station.
+    action: receive
+    channel:
+      $ref: '#/channels/BicycleBookedChannel'
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        groupId:
+          type: string
+          pattern: ^cg-bicycle-booked-.*$
+
+
+components:
+  messages:
+    BicycleAddedToRackSend:
+      name: BicycleAddedToRack
+      title: Bicycle Added To Rack
+      summary: A mechanic has brought a bicycle to a rack at a public transport station.
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/BicycleAddedToRackPayload'
+
+    BicycleReturnedSend:
+      name: BicycleReturned
+      title: Bicycle Returned
+      summary: A commuter has returned a bicycle to a rack near their home.
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/BicycleReturnedPayload'
+
+    BicycleBookedReceive:
+      name: BicycleBooked
+      title: Bicycle Booked
+      summary: A commuter has booked a bicycle at a public transport station.
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/MessageHeader'
+      payload:
+        $ref: '#/components/schemas/BicycleBookedPayload'
+
+
+  schemas:
+
+    BicycleAddedToRackPayload:
+      description: Payload for the event that a bicycle has been added to a rack by a mechanic
+      type: object
+      required:
+        - bicycle
+        - rack
+      properties:
+        bicycle:
+          $ref: '#/components/schemas/BicycleShort'
+        rack:
+          $ref: '#/components/schemas/RackShort'
+
+    BicycleReturnedPayload:
+      description: Payload for the event that a commuter has returned a bicycle to a rack
+      type: object
+      required:
+        - bicycle
+        - rack
+        - commuterId
+      properties:
+        bicycle:
+          $ref: '#/components/schemas/BicycleShort'
+        rack:
+          $ref: '#/components/schemas/RackShort'
+        commuterId:
+          description: Identifier of the commuter who returned the bicycle
+          type: string
+          format: uuid
+          examples:
+            - c8a44f12-3b19-4e72-9c5d-fa23d1b87654
+
+    BicycleBookedPayload:
+      description: Payload for the event that a commuter has booked a bicycle at a public transport station
+      type: object
+      required:
+        - bicycle
+        - rack
+        - commuterId
+      properties:
+        bicycle:
+          $ref: '#/components/schemas/BicycleShort'
+        rack:
+          $ref: '#/components/schemas/RackShort'
+        commuterId:
+          description: Identifier of the commuter who booked the bicycle
+          type: string
+          format: uuid
+          examples:
+            - c8a44f12-3b19-4e72-9c5d-fa23d1b87654
+
+    BicycleShort:
+      description: A bicycle managed within the bicycle sharing system
+      type: object
+      required:
+        - bicycleId
+      properties:
+        bicycleId:
+          description: Unique identifier of the bicycle
+          type: string
+          format: uuid
+          examples:
+            - e4b5c921-7f3a-4d80-b1c6-2a7e9d345678
+        serialNumber:
+          description: Physical serial number of the bicycle
+          type: string
+          minLength: 5
+          maxLength: 30
+          examples:
+            - BK-2024-00421
+
+    RackShort:
+      description: A rack where bicycles are stored at a public transport station
+      type: object
+      required:
+        - rackId
+        - station
+      properties:
+        rackId:
+          description: Unique identifier of the rack
+          type: string
+          format: uuid
+          examples:
+            - 9d3e7b14-1c8a-4f56-a2b3-6d019e78cdef
+        capacity:
+          description: Maximum number of bicycles the rack can hold
+          type: integer
+          minimum: 1
+          maximum: 100
+          examples:
+            - 20
+        station:
+          $ref: '#/components/schemas/StationPublicTransport'
+        locks:
+          description: Locks contained in this rack
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/LockShort'
+
+    LockShort:
+      description: A lock contained in a rack that secures a bicycle
+      type: object
+      required:
+        - lockId
+      properties:
+        lockId:
+          description: Unique identifier of the lock
+          type: string
+          format: uuid
+          examples:
+            - 2f7a9c53-6e14-48d0-b5a7-3c0f1d892345
+        isLocked:
+          description: Indicates whether the lock is currently engaged
+          type: boolean
+          default: true
+          examples:
+            - true
+
+    StationPublicTransport:
+      description: A public transport station where bicycle racks are located
+      type: object
+      required:
+        - stationId
+        - name
+      properties:
+        stationId:
+          description: Unique identifier of the public transport station
+          type: string
+          format: uuid
+          examples:
+            - 7e2d4f88-0b3c-4a91-c6d5-8f7a2e163490
+        name:
+          description: Name of the public transport station
+          type: string
+          minLength: 2
+          maxLength: 100
+          examples:
+            - Central Station
+            - Marienplatz
+        city:
+          description: City where the station is located
+          type: string
+          minLength: 2
+          maxLength: 55
+          examples:
+            - Munich
+            - Berlin
+
+    MessageHeader:
+      description: Header information for each message
+      type: object
+      required:
+        - correlationId
+        - messageId
+        - x-api-identifier
+        - x-api-version
+      properties:
+        correlationId:
+          description: Identifier to be set by application to trace end-to-end API journey
+          type: string
+          format: uuid
+          examples:
+            - d5f29a73-8e41-4c30-b7d6-2a9f0c415678
+        messageId:
+          description: Identifier for the particular message, needed in case of cascading infrastructure
+          type: string
+          format: uuid
+          examples:
+            - 4b8e1f62-3a07-4d95-c8b2-7f6d0e329012
+        x-api-identifier:
+          description: Identifier of the API used to create the message
+          type: string
+          format: uuid
+          default: a3c7f821-9e4b-4d1a-bf62-dc4e2f8a1047
+          examples:
+            - a3c7f821-9e4b-4d1a-bf62-dc4e2f8a1047
+        x-api-version:
+          description: Version of the API
+          type: string
+          x-extensible-enum:
+            - 1.0.0
+          default: 1.0.0
+          examples:
+            - 1.0.0
+        source:
+          description: Application name creating the message
+          type: string
+          minLength: 2
+          maxLength: 30
+          examples:
+            - BicycleDistribution
+
+  securitySchemes:
+    user-password:
+      type: userPassword
+      description: Security scheme for events
