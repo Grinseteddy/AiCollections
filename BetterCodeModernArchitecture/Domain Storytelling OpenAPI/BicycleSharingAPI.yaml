@@ -1,0 +1,1400 @@
+openapi: 3.1.0
+info:
+  title: Bicycle Sharing Management API
+  description: >
+    API for managing bicycle sharing operations including bicycle distribution,
+    user registration, accounting, booking, rack management, and riding lifecycle.
+    Derived from the Domain Story and Visual Glossary of the Bicycle Sharing system.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@bicyclesharing.com
+  x-api-id: c7e2a914-3b8f-4d55-b062-19af730cc841
+  x-audience: external-public
+
+servers:
+  - url: 'https://api.bicyclesharing.com/v1'
+
+security:
+  - openIdConnect:
+      - bicycles:read
+      - bicycles:write
+
+tags:
+  - name: Bicycles
+    description: Bicycle registration and distribution operations (Mechanic / Bicycle distribution bounded context)
+  - name: Racks
+    description: Rack management operations including lock assignments and availability
+  - name: Bookings
+    description: Bicycle booking lifecycle — create, activate (unlock), and complete (return)
+  - name: Codes
+    description: Temporary unlock codes for rack lock management (Rack management bounded context)
+  - name: Commuters
+    description: Commuter registration and profile management (User management bounded context)
+  - name: MonthlyFees
+    description: Monthly subscription fee and accounting operations (Accounting bounded context)
+
+# ---------------------------------------------------------------------------
+# PATHS
+# ---------------------------------------------------------------------------
+paths:
+
+  # ---- Bicycles -----------------------------------------------------------
+  /bicycles:
+    get:
+      summary: Search for available bicycles
+      description: >
+        Returns a filtered list of bicycles. A commuter uses this to find an
+        available bicycle at a public transport station (Domain Story step 4).
+      operationId: getBicyclesByFilter
+      tags:
+        - Bicycles
+      security:
+        - openIdConnect:
+            - bicycles:read
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/BicycleStatusQueryParameter'
+        - $ref: '#/components/parameters/StationIdQueryParameter'
+        - $ref: '#/components/parameters/RackIdQueryParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/BicycleListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    post:
+      summary: Register a new bicycle
+      description: >
+        A mechanic registers a new bicycle and assigns it to an initial rack
+        at a public transport station (Domain Story step 1).
+      operationId: createBicycle
+      tags:
+        - Bicycles
+      security:
+        - openIdConnect:
+            - bicycles:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/BicycleCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/ResourceCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /bicycles/{bicycleId}:
+    get:
+      summary: Get a bicycle by ID
+      description: Returns the full details of a single bicycle identified by its ID.
+      operationId: getBicycleById
+      tags:
+        - Bicycles
+      security:
+        - openIdConnect:
+            - bicycles:read
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/BicycleIdPathParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/BicycleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    put:
+      summary: Update a bicycle
+      description: >
+        Updates bicycle information such as its rack assignment or status.
+        Used when a mechanic redistributes or changes maintenance state.
+      operationId: updateBicycle
+      tags:
+        - Bicycles
+      security:
+        - openIdConnect:
+            - bicycles:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/BicycleIdPathParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/BicycleUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BicycleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  # ---- Racks ---------------------------------------------------------------
+  /racks:
+    get:
+      summary: Search for racks
+      description: >
+        Returns a filtered list of racks, optionally filtered by public transport
+        station. Used by commuters to locate racks near their station.
+      operationId: getRacksByFilter
+      tags:
+        - Racks
+      security:
+        - openIdConnect:
+            - bicycles:read
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/StationIdQueryParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/RackListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /racks/{rackId}:
+    get:
+      summary: Get a rack by ID
+      description: Returns the full details of a rack including its locks and available slots.
+      operationId: getRackById
+      tags:
+        - Racks
+      security:
+        - openIdConnect:
+            - bicycles:read
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/RackIdPathParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/RackResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  # ---- Bookings ------------------------------------------------------------
+  /bookings:
+    get:
+      summary: List bookings by filter
+      description: >
+        Returns a filtered list of bookings. Can be filtered by commuter ID
+        and/or booking status.
+      operationId: getBookingsByFilter
+      tags:
+        - Bookings
+      security:
+        - openIdConnect:
+            - bicycles:read
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/CommuterIdQueryParameter'
+        - $ref: '#/components/parameters/BookingStatusQueryParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/BookingListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    post:
+      summary: Book a bicycle
+      description: >
+        A commuter books an available bicycle at a specific rack
+        (Domain Story step 5). The booking enters PENDING status and
+        a Code is subsequently generated for the lock.
+      operationId: createBooking
+      tags:
+        - Bookings
+      security:
+        - openIdConnect:
+            - bicycles:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/BookingCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/ResourceCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '409':
+          $ref: '#/components/responses/ConflictResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /bookings/{bookingId}:
+    get:
+      summary: Get a booking by ID
+      description: Returns full details of a single booking identified by its ID.
+      operationId: getBookingById
+      tags:
+        - Bookings
+      security:
+        - openIdConnect:
+            - bicycles:read
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/BookingIdPathParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/BookingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    put:
+      summary: Update booking status (activate or complete)
+      description: >
+        Updates the status of a booking. Used to transition:
+        - PENDING → ACTIVE when a commuter unlocks the bicycle (step 7), or
+        - ACTIVE → COMPLETED when the commuter returns the bicycle and
+          confirms the return via Code (steps 9–10).
+        The returnRackId must be provided when completing the booking.
+      operationId: updateBooking
+      tags:
+        - Bookings
+      security:
+        - openIdConnect:
+            - bicycles:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/BookingIdPathParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/BookingUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BookingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /bookings/{bookingId}/code:
+    get:
+      summary: Get the unlock code for a booking
+      description: >
+        Returns the temporary Code associated with a booking for unlocking
+        the bicycle's lock at the rack (Domain Story steps 6 and 10).
+        The code is valid for a limited period and unlocks exactly one Lock.
+      operationId: getCodeByBookingId
+      tags:
+        - Bookings
+        - Codes
+      security:
+        - openIdConnect:
+            - bicycles:read
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/BookingIdPathParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CodeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  # ---- Commuters -----------------------------------------------------------
+  /commuters:
+    post:
+      summary: Register a new commuter
+      description: >
+        Registers a new commuter via the app (Domain Story step 2).
+        On success, returns a link to the newly created commuter resource.
+      operationId: createCommuter
+      tags:
+        - Commuters
+      security:
+        - openIdConnect:
+            - bicycles:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/CommuterCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/ResourceCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '409':
+          $ref: '#/components/responses/ConflictResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /commuters/{commuterId}:
+    get:
+      summary: Get a commuter by ID
+      description: Returns the profile of a commuter identified by their ID.
+      operationId: getCommuterById
+      tags:
+        - Commuters
+      security:
+        - openIdConnect:
+            - bicycles:read
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/CommuterIdPathParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/CommuterResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  # ---- Monthly Fees --------------------------------------------------------
+  /monthly-fees:
+    get:
+      summary: List monthly fees by filter
+      description: >
+        Returns a filtered list of monthly fee records. Can be filtered by
+        commuter ID and/or payment status.
+      operationId: getMonthlyFeesByFilter
+      tags:
+        - MonthlyFees
+      security:
+        - openIdConnect:
+            - bicycles:read
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/CommuterIdQueryParameter'
+        - $ref: '#/components/parameters/FeeStatusQueryParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/MonthlyFeeListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+    post:
+      summary: Create a monthly fee payment
+      description: >
+        Initiates a monthly fee payment for a commuter via the app
+        (Domain Story step 3). A commuter must have at least one paid monthly
+        fee to be eligible to book bicycles.
+      operationId: createMonthlyFee
+      tags:
+        - MonthlyFees
+      security:
+        - openIdConnect:
+            - bicycles:write
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+      requestBody:
+        $ref: '#/components/requestBodies/MonthlyFeeCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/ResourceCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+  /monthly-fees/{feeId}:
+    get:
+      summary: Get a monthly fee by ID
+      description: Returns details of a single monthly fee record identified by its ID.
+      operationId: getMonthlyFeeById
+      tags:
+        - MonthlyFees
+      security:
+        - openIdConnect:
+            - bicycles:read
+      parameters:
+        - $ref: '#/components/parameters/VersionParameter'
+        - $ref: '#/components/parameters/FeeIdPathParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/MonthlyFeeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ServiceNotAvailableResponse'
+        default:
+          $ref: '#/components/responses/DefaultResponse'
+
+# ---------------------------------------------------------------------------
+# COMPONENTS
+# ---------------------------------------------------------------------------
+components:
+
+  # ---- Parameters ----------------------------------------------------------
+  parameters:
+
+    VersionParameter:
+      description: Version of the API specification expected by the client
+      name: x-api-version
+      in: header
+      required: true
+      schema:
+        type: string
+        default: "1.0.0"
+        x-extensible-enum:
+          - "1.0.0"
+
+    BicycleIdPathParameter:
+      description: Path parameter uniquely identifying a bicycle
+      name: bicycleId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - f1a2b3c4-d5e6-7890-abcd-ef1234567890
+
+    RackIdPathParameter:
+      description: Path parameter uniquely identifying a rack
+      name: rackId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - a1b2c3d4-e5f6-7890-abcd-ef1234567891
+
+    RackIdQueryParameter:
+      description: Query parameter to filter results by rack ID
+      name: rackId
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - a1b2c3d4-e5f6-7890-abcd-ef1234567891
+
+    BookingIdPathParameter:
+      description: Path parameter uniquely identifying a booking
+      name: bookingId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - b2c3d4e5-f6a7-8901-bcde-f12345678901
+
+    CommuterIdPathParameter:
+      description: Path parameter uniquely identifying a commuter
+      name: commuterId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - c3d4e5f6-a7b8-9012-cdef-123456789012
+
+    CommuterIdQueryParameter:
+      description: Query parameter to filter results by commuter ID
+      name: commuterId
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - c3d4e5f6-a7b8-9012-cdef-123456789012
+
+    FeeIdPathParameter:
+      description: Path parameter uniquely identifying a monthly fee record
+      name: feeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - d4e5f6a7-b8c9-0123-defa-234567890123
+
+    StationIdQueryParameter:
+      description: Query parameter to filter results by public transport station ID
+      name: stationId
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+        examples:
+          - e5f6a7b8-c9d0-1234-efab-345678901234
+
+    BicycleStatusQueryParameter:
+      description: Query parameter to filter bicycles by their current status
+      name: status
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/BicycleStatus'
+
+    BookingStatusQueryParameter:
+      description: Query parameter to filter bookings by their current status
+      name: status
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/BookingStatus'
+
+    FeeStatusQueryParameter:
+      description: Query parameter to filter monthly fees by their payment status
+      name: status
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/FeeStatus'
+
+  # ---- Request Bodies ------------------------------------------------------
+  requestBodies:
+
+    BicycleCreateRequest:
+      description: Request body for registering a new bicycle
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BicycleToBeCreated'
+
+    BicycleUpdateRequest:
+      description: Request body for updating bicycle details or status
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Bicycle'
+
+    BookingCreateRequest:
+      description: Request body for creating a new bicycle booking
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookingToBeCreated'
+
+    BookingUpdateRequest:
+      description: Request body for updating a booking status (activate or complete)
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Booking'
+
+    CommuterCreateRequest:
+      description: Request body for registering a new commuter
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CommuterToBeCreated'
+
+    MonthlyFeeCreateRequest:
+      description: Request body for initiating a monthly fee payment
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MonthlyFeeToBeCreated'
+
+  # ---- Responses -----------------------------------------------------------
+  responses:
+
+    BicycleResponse:
+      description: Single bicycle response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Bicycle'
+
+    BicycleListResponse:
+      description: List of bicycles matching the filter
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BicycleList'
+
+    RackResponse:
+      description: Single rack response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Rack'
+
+    RackListResponse:
+      description: List of racks matching the filter
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RackList'
+
+    BookingResponse:
+      description: Single booking response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Booking'
+
+    BookingListResponse:
+      description: List of bookings matching the filter
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookingList'
+
+    CodeResponse:
+      description: Unlock code associated with a booking
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Code'
+
+    CommuterResponse:
+      description: Single commuter response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Commuter'
+
+    MonthlyFeeResponse:
+      description: Single monthly fee response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MonthlyFee'
+
+    MonthlyFeeListResponse:
+      description: List of monthly fees matching the filter
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MonthlyFeeList'
+
+    ResourceCreatedResponse:
+      description: Resource created successfully — link returned
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceLink'
+
+    BadRequestResponse:
+      description: Invalid request parameters or request body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFoundResponse:
+      description: Requested resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenResponse:
+      description: Access to the resource is forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ConflictResponse:
+      description: Resource conflict (e.g. bicycle already booked, commuter already exists)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServiceNotAvailableResponse:
+      description: Service temporarily unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    DefaultResponse:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  # ---- Schemas -------------------------------------------------------------
+  schemas:
+
+    # -- Bicycle domain -------------------------------------------------------
+
+    Bicycle:
+      description: >
+        A bicycle managed within the bicycle sharing system.
+        A bicycle is stored (0..1) in a Rack and secured by a Lock.
+      type: object
+      required:
+        - id
+        - status
+      allOf:
+        - $ref: '#/components/schemas/BicycleToBeCreated'
+        - properties:
+            id:
+              description: Unique identifier of the bicycle
+              type: string
+              format: uuid
+              examples:
+                - f1a2b3c4-d5e6-7890-abcd-ef1234567890
+            status:
+              $ref: '#/components/schemas/BicycleStatus'
+            lockId:
+              description: Identifier of the lock currently securing this bicycle
+              type: string
+              format: uuid
+              examples:
+                - e6f7a8b9-c0d1-2345-fabc-456789012345
+            createdAt:
+              description: Date and time when the bicycle was registered
+              type: string
+              format: date-time
+              examples:
+                - 2025-10-06T13:24:00Z
+            updatedAt:
+              description: Date and time when the bicycle record was last updated
+              type: string
+              format: date-time
+              examples:
+                - 2025-10-06T14:00:00Z
+
+    BicycleToBeCreated:
+      description: Data required to register a new bicycle at a rack
+      type: object
+      required:
+        - rackId
+      properties:
+        rackId:
+          description: Identifier of the rack where the bicycle is initially placed by the mechanic
+          type: string
+          format: uuid
+          examples:
+            - a1b2c3d4-e5f6-7890-abcd-ef1234567891
+
+    BicycleStatus:
+      description: Current operational status of a bicycle
+      type: string
+      x-extensible-enum:
+        - AVAILABLE
+        - BOOKED
+        - IN_USE
+        - MAINTENANCE
+      default: AVAILABLE
+      examples:
+        - AVAILABLE
+
+    BicycleList:
+      description: Paginated list of bicycles
+      type: object
+      required:
+        - bicycleList
+      properties:
+        bicycleList:
+          description: Array of bicycle objects
+          type: array
+          minItems: 0
+          maxItems: 1023
+          items:
+            $ref: '#/components/schemas/Bicycle'
+
+    # -- Rack domain ----------------------------------------------------------
+
+    Rack:
+      description: >
+        A bicycle rack located at a public transport station.
+        A rack contains 1..* Locks and can store 0..* Bicycles.
+      type: object
+      required:
+        - id
+        - stationId
+        - capacity
+        - locks
+      properties:
+        id:
+          description: Unique identifier of the rack
+          type: string
+          format: uuid
+          examples:
+            - a1b2c3d4-e5f6-7890-abcd-ef1234567891
+        stationId:
+          description: Identifier of the public transport station where this rack is located
+          type: string
+          format: uuid
+          examples:
+            - e5f6a7b8-c9d0-1234-efab-345678901234
+        stationName:
+          description: Human-readable name of the public transport station
+          type: string
+          maxLength: 200
+          examples:
+            - Central Station
+        address:
+          description: Physical address of the rack
+          type: string
+          maxLength: 500
+          examples:
+            - Hauptbahnhof Platz 1, 80335 Munich
+        capacity:
+          description: Total number of bicycle slots in the rack
+          type: integer
+          minimum: 1
+          maximum: 100
+          examples:
+            - 10
+        availableSlots:
+          description: Number of currently free slots in the rack
+          type: integer
+          minimum: 0
+          examples:
+            - 4
+        locks:
+          description: >
+            List of lock identifiers contained in this rack (1..*).
+            Each lock can secure one bicycle at a time.
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+          examples:
+            - - e6f7a8b9-c0d1-2345-fabc-456789012345
+
+    RackList:
+      description: List of racks
+      type: object
+      required:
+        - rackList
+      properties:
+        rackList:
+          description: Array of rack objects
+          type: array
+          minItems: 0
+          maxItems: 1023
+          items:
+            $ref: '#/components/schemas/Rack'
+
+    Lock:
+      description: >
+        A physical lock contained within a rack. A rack contains 1..* locks.
+        A Lock is opened by exactly one Code and secures 0..1 Bicycle.
+      type: object
+      required:
+        - id
+        - rackId
+        - status
+      properties:
+        id:
+          description: Unique identifier of the lock
+          type: string
+          format: uuid
+          examples:
+            - e6f7a8b9-c0d1-2345-fabc-456789012345
+        rackId:
+          description: Identifier of the rack that contains this lock
+          type: string
+          format: uuid
+          examples:
+            - a1b2c3d4-e5f6-7890-abcd-ef1234567891
+        status:
+          $ref: '#/components/schemas/LockStatus'
+        bicycleId:
+          description: Identifier of the bicycle currently secured by this lock (null if empty)
+          type: string
+          format: uuid
+          nullable: true
+          examples:
+            - f1a2b3c4-d5e6-7890-abcd-ef1234567890
+
+    LockStatus:
+      description: Current physical status of a lock
+      type: string
+      x-extensible-enum:
+        - LOCKED
+        - UNLOCKED
+      default: LOCKED
+      examples:
+        - LOCKED
+
+    # -- Booking domain -------------------------------------------------------
+
+    Booking:
+      description: >
+        A bicycle booking representing the full lifecycle from reservation
+        through active riding to return confirmation.
+      type: object
+      required:
+        - id
+        - commuterId
+        - bicycleId
+        - pickupRackId
+        - status
+      allOf:
+        - $ref: '#/components/schemas/BookingToBeCreated'
+        - properties:
+            id:
+              description: Unique identifier of the booking
+              type: string
+              format: uuid
+              examples:
+                - b2c3d4e5-f6a7-8901-bcde-f12345678901
+            status:
+              $ref: '#/components/schemas/BookingStatus'
+            returnRackId:
+              description: >
+                Identifier of the rack where the bicycle was returned.
+                Must be provided when transitioning status to COMPLETED.
+              type: string
+              format: uuid
+              nullable: true
+              examples:
+                - a1b2c3d4-e5f6-7890-abcd-ef1234567891
+            createdAt:
+              description: Date and time when the booking was created
+              type: string
+              format: date-time
+              examples:
+                - 2025-10-06T13:24:00Z
+            startedAt:
+              description: Date and time when the commuter unlocked the bicycle and started riding
+              type: string
+              format: date-time
+              nullable: true
+              examples:
+                - 2025-10-06T13:30:00Z
+            completedAt:
+              description: Date and time when the bicycle was returned and return confirmed
+              type: string
+              format: date-time
+              nullable: true
+              examples:
+                - 2025-10-06T14:00:00Z
+            updatedAt:
+              description: Date and time when the booking record was last updated
+              type: string
+              format: date-time
+              examples:
+                - 2025-10-06T13:24:00Z
+
+    BookingToBeCreated:
+      description: Data required to create a new bicycle booking
+      type: object
+      required:
+        - commuterId
+        - bicycleId
+        - pickupRackId
+      properties:
+        commuterId:
+          description: Identifier of the commuter making the booking
+          type: string
+          format: uuid
+          examples:
+            - c3d4e5f6-a7b8-9012-cdef-123456789012
+        bicycleId:
+          description: Identifier of the bicycle to be booked (must have status AVAILABLE)
+          type: string
+          format: uuid
+          examples:
+            - f1a2b3c4-d5e6-7890-abcd-ef1234567890
+        pickupRackId:
+          description: Identifier of the rack from which the bicycle will be picked up
+          type: string
+          format: uuid
+          examples:
+            - a1b2c3d4-e5f6-7890-abcd-ef1234567891
+
+    BookingStatus:
+      description: >
+        Lifecycle status of a booking.
+        PENDING → ACTIVE (unlock) → COMPLETED (return confirmed).
+        CANCELLED represents a booking that was not activated.
+      type: string
+      x-extensible-enum:
+        - PENDING
+        - ACTIVE
+        - COMPLETED
+        - CANCELLED
+      default: PENDING
+      examples:
+        - PENDING
+
+    BookingList:
+      description: List of bookings
+      type: object
+      required:
+        - bookingList
+      properties:
+        bookingList:
+          description: Array of booking objects
+          type: array
+          minItems: 0
+          maxItems: 1023
+          items:
+            $ref: '#/components/schemas/Booking'
+
+    # -- Code domain ----------------------------------------------------------
+
+    Code:
+      description: >
+        A temporary numeric code that unlocks exactly one Lock within a booking.
+        Used by the commuter to unlock the bicycle at the rack (step 6/7)
+        and to confirm return (step 10).
+      type: object
+      required:
+        - value
+        - bookingId
+        - lockId
+        - expiresAt
+      properties:
+        value:
+          description: The alphanumeric unlock code entered at the rack
+          type: string
+          minLength: 4
+          maxLength: 10
+          examples:
+            - "4829"
+        bookingId:
+          description: Identifier of the booking this code belongs to
+          type: string
+          format: uuid
+          examples:
+            - b2c3d4e5-f6a7-8901-bcde-f12345678901
+        lockId:
+          description: Identifier of the specific lock this code unlocks (1 per code)
+          type: string
+          format: uuid
+          examples:
+            - e6f7a8b9-c0d1-2345-fabc-456789012345
+        expiresAt:
+          description: Date and time when this code expires and can no longer be used
+          type: string
+          format: date-time
+          examples:
+            - 2025-10-06T14:00:00Z
+
+    # -- Commuter domain ------------------------------------------------------
+
+    Commuter:
+      description: >
+        A registered commuter who uses the bicycle sharing service via the app.
+        A commuter drives 0..* bicycles and pays 1..* monthly fees.
+      type: object
+      required:
+        - id
+        - firstName
+        - lastName
+        - email
+      allOf:
+        - $ref: '#/components/schemas/CommuterToBeCreated'
+        - properties:
+            id:
+              description: Unique identifier of the commuter
+              type: string
+              format: uuid
+              examples:
+                - c3d4e5f6-a7b8-9012-cdef-123456789012
+            registeredAt:
+              description: Date and time when the commuter completed registration via the app
+              type: string
+              format: date-time
+              examples:
+                - 2025-10-01T10:00:00Z
+            updatedAt:
+              description: Date and time when the commuter profile was last updated
+              type: string
+              format: date-time
+              examples:
+                - 2025-10-01T10:00:00Z
+
+    CommuterToBeCreated:
+      description: Data required to register a new commuter via the app
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+      properties:
+        firstName:
+          description: First name of the commuter
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - Jane
+        lastName:
+          description: Last name of the commuter
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - Doe
+        email:
+          description: Email address used for registration; must be unique across all commuters
+          type: string
+          format: email
+          examples:
+            - jane.doe@example.com
+        phoneNumber:
+          description: Optional phone number of the commuter
+          type: string
+          maxLength: 20
+          examples:
+            - +49 89 12345678
+
+    # -- Monthly Fee domain ---------------------------------------------------
+
+    MonthlyFee:
+      description: >
+        A monthly subscription fee paid by a commuter via the app.
+        A commuter must have at least one active paid fee to book bicycles.
+      type: object
+      required:
+        - id
+        - commuterId
+        - amount
+        - currency
+        - billingPeriod
+        - status
+      allOf:
+        - $ref: '#/components/schemas/MonthlyFeeToBeCreated'
+        - properties:
+            id:
+              description: Unique identifier of the monthly fee record
+              type: string
+              format: uuid
+              examples:
+                - d4e5f6a7-b8c9-0123-defa-234567890123
+            status:
+              $ref: '#/components/schemas/FeeStatus'
+            paidAt:
+              description: Date and time when the fee was paid (null if not yet paid)
+              type: string
+              format: date-time
+              nullable: true
+              examples:
+                - 2025-10-01T08:00:00Z
+            createdAt:
+              description: Date and time when the fee record was created
+              type: string
+              format: date-time
+              examples:
+                - 2025-09-30T12:00:00Z
+
+    MonthlyFeeToBeCreated:
+      description: Data required to create a monthly fee payment
+      type: object
+      required:
+        - commuterId
+        - amount
+        - currency
+        - billingPeriod
+      properties:
+        commuterId:
+          description: Identifier of the commuter making the payment
+          type: string
+          format: uuid
+          examples:
+            - c3d4e5f6-a7b8-9012-cdef-123456789012
+        amount:
+          description: Monetary amount of the monthly fee
+          type: number
+          format: decimal
+          minimum: 0
+          examples:
+            - 29.99
+        currency:
+          description: ISO 4217 currency code for the fee amount
+          type: string
+          minLength: 3
+          maxLength: 3
+          examples:
+            - EUR
+        billingPeriod:
+          description: The billing month in YYYY-MM format
+          type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          examples:
+            - 2025-10
+
+    FeeStatus:
+      description: Payment status of a monthly subscription fee
+      type: string
+      x-extensible-enum:
+        - PENDING
+        - PAID
+        - OVERDUE
+        - CANCELLED
+      default: PENDING
+      examples:
+        - PENDING
+
+    MonthlyFeeList:
+      description: List of monthly fee records
+      type: object
+      required:
+        - monthlyFeeList
+      properties:
+        monthlyFeeList:
+          description: Array of monthly fee objects
+          type: array
+          minItems: 0
+          maxItems: 1023
+          items:
+            $ref: '#/components/schemas/MonthlyFee'
+
+    # -- Shared ---------------------------------------------------------------
+
+    ResourceLink:
+      description: URI link to a newly created resource, returned on 201 responses
+      type: object
+      required:
+        - resourceLink
+      properties:
+        resourceLink:
+          description: Fully qualified URI of the created resource
+          type: string
+          format: uri
+          examples:
+            - https://api.bicyclesharing.com/v1/bicycles/f1a2b3c4-d5e6-7890-abcd-ef1234567890
+
+    Error:
+      description: Standard error response object
+      type: object
+      required:
+        - code
+        - title
+      properties:
+        code:
+          description: Short domain-scoped error code for programmatic handling
+          type: string
+          minLength: 2
+          maxLength: 10
+          examples:
+            - BIKE-001
+        title:
+          description: Human-readable summary of the error
+          type: string
+          minLength: 2
+          maxLength: 256
+          examples:
+            - Bicycle f1a2b3c4 cannot be found.
+        detail:
+          description: URI link to the resource involved in the error for further context
+          type: string
+          format: uri
+          examples:
+            - https://api.bicyclesharing.com/v1/bicycles/f1a2b3c4-d5e6-7890-abcd-ef1234567890
+        severity:
+          description: Severity classification of the error
+          type: string
+          x-extensible-enum:
+            - FATAL
+            - ERROR
+            - WARNING
+            - INFO
+          default: ERROR
+          examples:
+            - ERROR
+        timestamp:
+          description: Date and time when the error occurred
+          type: string
+          format: date-time
+          examples:
+            - 2025-10-03T23:04:24Z
+
+  # ---- Security Schemes ----------------------------------------------------
+  securitySchemes:
+    openIdConnect:
+      description: >
+        Access to the Bicycle Sharing Management API via OpenID Connect.
+        Required scopes: bicycles:read (GET operations), bicycles:write (POST/PUT operations).
+      type: openIdConnect
+      openIdConnectUrl: https://auth.bicyclesharing.com/.well-known/openid-configuration
